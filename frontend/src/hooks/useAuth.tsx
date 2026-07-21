@@ -9,6 +9,33 @@ import {
 import type { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/services/supabase";
 
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+const isSupabaseConfigured = Boolean(
+  supabaseUrl &&
+    supabaseAnonKey &&
+    supabaseUrl !== "https://placeholder.supabase.co"
+);
+
+// Flag to bypass authentication during development or when Supabase keys are missing
+export const IS_DEV_AUTH_BYPASS =
+  import.meta.env.DEV ||
+  !isSupabaseConfigured ||
+  import.meta.env.VITE_BYPASS_AUTH === "true";
+
+const MOCK_DEV_USER: User = {
+  id: "dev-user-001",
+  app_metadata: { provider: "development" },
+  user_metadata: { full_name: "Demo Admin" },
+  aud: "authenticated",
+  created_at: new Date().toISOString(),
+  email: "admin@wattwise.ai",
+  phone: "",
+  role: "authenticated",
+  updated_at: new Date().toISOString(),
+};
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -20,11 +47,19 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(
+    IS_DEV_AUTH_BYPASS ? MOCK_DEV_USER : null
+  );
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!IS_DEV_AUTH_BYPASS);
 
   useEffect(() => {
+    if (IS_DEV_AUTH_BYPASS) {
+      setUser(MOCK_DEV_USER);
+      setLoading(false);
+      return;
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
@@ -45,6 +80,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
+    if (IS_DEV_AUTH_BYPASS) {
+      setUser(MOCK_DEV_USER);
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -58,6 +98,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    if (IS_DEV_AUTH_BYPASS) {
+      setUser(null);
+      return;
+    }
+
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("Error signing out:", error.message);
@@ -81,3 +126,4 @@ export function useAuth() {
   }
   return context;
 }
+

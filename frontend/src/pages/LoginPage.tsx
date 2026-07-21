@@ -1,14 +1,14 @@
 import { useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Zap } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, IS_DEV_AUTH_BYPASS } from "@/hooks/useAuth";
 
 export function LoginPage() {
   const { user, loading, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && user) {
+    if (IS_DEV_AUTH_BYPASS || (!loading && user)) {
       navigate("/dashboard", { replace: true });
     }
   }, [user, loading, navigate]);
@@ -16,10 +16,13 @@ export function LoginPage() {
   const handleGoogleLogin = useCallback(async () => {
     try {
       await signInWithGoogle();
+      if (IS_DEV_AUTH_BYPASS) {
+        navigate("/dashboard", { replace: true });
+      }
     } catch (error) {
       console.error("Login failed:", error);
     }
-  }, [signInWithGoogle]);
+  }, [signInWithGoogle, navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-watt-green-950/30 via-background to-background px-4">

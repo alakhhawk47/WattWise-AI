@@ -3,10 +3,9 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn(
-    "⚠️ Missing Supabase environment variables. Auth features will not work.\n" +
-    "Create a .env file in frontend/ with VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY."
+if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === "https://placeholder.supabase.co") {
+  console.info(
+    "ℹ️ Missing or placeholder Supabase credentials. Running in Development Auth Bypass mode."
   );
 }
 
