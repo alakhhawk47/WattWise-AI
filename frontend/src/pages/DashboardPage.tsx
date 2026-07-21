@@ -1,10 +1,48 @@
-import { LayoutDashboard } from "lucide-react";
+// Dashboard Page — Phase 2A
+// Full SaaS-style energy monitoring dashboard with live data
+
+import { LayoutDashboard, RefreshCw, Wifi } from "lucide-react";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import { SummaryCard } from "@/components/dashboard/SummaryCard";
+import { ClassroomGrid } from "@/components/dashboard/ClassroomGrid";
+import { EnergyLineChart } from "@/components/dashboard/EnergyLineChart";
+import { PowerBarChart } from "@/components/dashboard/PowerBarChart";
+import { ConsumptionPieChart } from "@/components/dashboard/ConsumptionPieChart";
+import { AlertsPanel } from "@/components/dashboard/AlertsPanel";
+import { RecommendationsPanel } from "@/components/dashboard/RecommendationsPanel";
+import { cn } from "@/lib/utils";
 
 export function DashboardPage() {
+  const {
+    classrooms,
+    alerts,
+    recommendations,
+    summaryCards,
+    chartData,
+    isLoading,
+    lastUpdated,
+    refresh,
+  } = useDashboardData();
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="relative">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-primary" />
+          </div>
+          <p className="text-sm text-muted-foreground animate-pulse">
+            Loading dashboard...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="rounded-lg bg-primary/10 p-2">
             <LayoutDashboard className="h-5 w-5 text-primary" />
@@ -16,20 +54,58 @@ export function DashboardPage() {
             </p>
           </div>
         </div>
+
+        {/* Live indicator + Refresh */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5">
+            <Wifi className="h-3.5 w-3.5 text-emerald-500 animate-pulse" />
+            <span className="text-xs font-medium text-muted-foreground">
+              Live — Updated {lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+            </span>
+          </div>
+          <button
+            onClick={refresh}
+            className={cn(
+              "rounded-lg border border-border bg-card p-2 text-muted-foreground",
+              "hover:bg-muted hover:text-foreground transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            )}
+            title="Refresh data"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
-      {/* Empty Content Section */}
-      <div className="flex min-h-[400px] items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20">
-        <div className="text-center">
-          <LayoutDashboard className="mx-auto h-12 w-12 text-muted-foreground/30" />
-          <h3 className="mt-4 text-lg font-medium text-muted-foreground">
-            Dashboard Coming Soon
-          </h3>
-          <p className="mt-1 text-sm text-muted-foreground/70">
-            Live campus metrics, classroom status cards, and alert overview will
-            appear here.
-          </p>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {summaryCards.map((card) => (
+          <SummaryCard key={card.title} data={card} />
+        ))}
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <EnergyLineChart data={chartData.dailyEnergy} />
+        <PowerBarChart data={chartData.powerDistribution} />
+        <ConsumptionPieChart data={chartData.consumptionBreakdown} />
+      </div>
+
+      {/* Live Campus Overview */}
+      <div>
+        <div className="mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-foreground">Live Campus Overview</h2>
+          <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+            {classrooms.length} Rooms
+          </span>
         </div>
+        <ClassroomGrid classrooms={classrooms} />
+      </div>
+
+      {/* Alerts + AI Recommendations Row */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <AlertsPanel alerts={alerts} />
+        <RecommendationsPanel recommendations={recommendations} />
       </div>
     </div>
   );
