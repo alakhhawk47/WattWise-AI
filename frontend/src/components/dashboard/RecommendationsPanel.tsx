@@ -1,9 +1,8 @@
 // AI Recommendations Panel — displays AI-generated suggestions
-// Reusable recommendation cards with type-based styling
-// Clickable cards open the RecommendationModal for full details
+// Reusable recommendation cards with type-based styling & empty state support
 
 import { useState } from "react";
-import { Lightbulb, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Lightbulb, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
 import type { Recommendation } from "@/types";
 import { cn } from "@/lib/utils";
 import { RecommendationModal } from "./RecommendationModal";
@@ -37,7 +36,7 @@ export function RecommendationsPanel({ recommendations }: RecommendationsPanelPr
   const [selectedRec, setSelectedRec] = useState<Recommendation | null>(null);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-2xl border border-border bg-card p-5 card-hover">
       <div className="mb-4 flex items-center gap-2">
         <div className="rounded-lg bg-violet-100 p-1.5 dark:bg-violet-500/20">
           <Lightbulb className="h-4 w-4 text-violet-600 dark:text-violet-400" />
@@ -48,29 +47,42 @@ export function RecommendationsPanel({ recommendations }: RecommendationsPanelPr
         </div>
       </div>
 
-      <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
-        {recommendations.map((rec) => {
-          const config = TYPE_CONFIG[rec.type];
-          const Icon = config.icon;
-          return (
-            <button
-              key={rec.id}
-              onClick={() => setSelectedRec(rec)}
-              className={cn(
-                "w-full flex items-start gap-3 rounded-xl border p-3 text-left transition-all hover:bg-muted/50 hover:shadow-sm cursor-pointer",
-                config.border
-              )}
-            >
-              <div className={cn("mt-0.5 shrink-0 rounded-lg p-1.5", config.bg)}>
-                <Icon className={cn("h-3.5 w-3.5", config.color)} />
-              </div>
-              <p className="text-xs leading-relaxed text-foreground/90">
-                {rec.message}
-              </p>
-            </button>
-          );
-        })}
-      </div>
+      {recommendations.length > 0 ? (
+        <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
+          {recommendations.map((rec) => {
+            const config = TYPE_CONFIG[rec.type];
+            const Icon = config.icon;
+            return (
+              <button
+                key={rec.id}
+                onClick={() => setSelectedRec(rec)}
+                aria-label={`AI Recommendation: ${rec.message}`}
+                className={cn(
+                  "w-full flex items-start gap-3 rounded-xl border p-3 text-left transition-all hover:bg-muted/50 hover:shadow-sm cursor-pointer focus-visible:ring-2 focus-visible:ring-primary",
+                  config.border
+                )}
+              >
+                <div className={cn("mt-0.5 shrink-0 rounded-lg p-1.5", config.bg)}>
+                  <Icon className={cn("h-3.5 w-3.5", config.color)} />
+                </div>
+                <p className="text-xs leading-relaxed text-foreground/90">
+                  {rec.message}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-10 text-center space-y-2">
+          <div className="rounded-full bg-violet-100 dark:bg-violet-500/15 p-3">
+            <Sparkles className="h-6 w-6 text-violet-500" />
+          </div>
+          <p className="text-sm font-semibold text-foreground">No Recommendations Available</p>
+          <p className="text-xs text-muted-foreground max-w-xs">
+            System analysis complete. All rooms are configured for max efficiency.
+          </p>
+        </div>
+      )}
 
       {/* Recommendation Detail Modal */}
       {selectedRec && (

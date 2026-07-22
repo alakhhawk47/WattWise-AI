@@ -95,13 +95,13 @@
   @apply bg-muted-foreground/40;
 }
 
-/* === Phase 4: Animations & Micro-interactions === */
+/* === Phase 5: Animations & Micro-interactions === */
 
 /* Page fade-in */
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -113,7 +113,7 @@
 @keyframes slide-up {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -121,11 +121,11 @@
   }
 }
 
-/* Subtle scale-in for modals */
+/* Scale-in for modals */
 @keyframes scale-in {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.96);
   }
   to {
     opacity: 1;
@@ -141,11 +141,11 @@
   }
   50% {
     opacity: 0.6;
-    transform: scale(1.3);
+    transform: scale(1.25);
   }
 }
 
-/* Spin animation for refresh button */
+/* Spin animation for refresh icon */
 @keyframes spin-once {
   from {
     transform: rotate(0deg);
@@ -155,17 +155,38 @@
   }
 }
 
+/* Shimmer animation for loading states */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted-foreground) / 0.15) 37%,
+    hsl(var(--muted)) 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
 /* Utility animation classes */
 .animate-fade-in {
-  animation: fade-in 0.3s ease-out both;
+  animation: fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-slide-up {
-  animation: slide-up 0.35s ease-out both;
+  animation: slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-scale-in {
-  animation: scale-in 0.2s ease-out both;
+  animation: scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-pulse-live {
@@ -176,27 +197,39 @@
   animation: spin-once 0.6s ease-in-out;
 }
 
-/* Button press active state */
-button:active:not(:disabled) {
+/* Button press & focus feedback */
+button, [role="button"] {
+  transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+button:active:not(:disabled), [role="button"]:active {
   transform: scale(0.97);
-  transition: transform 0.08s ease-in-out;
 }
 
-/* Card hover elevation */
+/* Accessible visible focus ring */
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+  outline: none;
+  ring: 2px;
+  @apply ring-primary ring-offset-2 ring-offset-background;
+}
+
+/* Card hover elevation & subtle scale (1.01) */
 .card-hover {
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-.card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-}
-.dark .card-hover:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-/* Modal backdrop */
+.card-hover:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.06);
+}
+
+.dark .card-hover:hover {
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.3);
+}
+
+/* Modal backdrop blur */
 .modal-backdrop {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
   animation: fade-in 0.15s ease-out both;
 }

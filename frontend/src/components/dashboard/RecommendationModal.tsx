@@ -1,6 +1,7 @@
-// AI Recommendation Detail Modal — Phase 4
-// Displays full breakdown of an AI recommendation with problem, reason, action, savings, priority, and impact
+// AI Recommendation Detail Modal — Phase 5
+// Displays full breakdown of an AI recommendation with ESC key listener, aria dialog attributes & smooth animations
 
+import { useEffect } from "react";
 import { X, AlertCircle, Lightbulb, CheckCircle2, Zap, Target, TrendingDown, ArrowRight } from "lucide-react";
 import type { Recommendation } from "@/types";
 import { cn } from "@/lib/utils";
@@ -42,10 +43,22 @@ export function RecommendationModal({ recommendation, onClose }: RecommendationM
   const config = TYPE_CONFIG[recommendation.type];
   const Icon = config.icon;
 
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop"
       onClick={(e) => e.target === e.currentTarget && onClose()}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="rec-modal-title"
     >
       <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-in space-y-5">
         {/* Header */}
@@ -55,7 +68,7 @@ export function RecommendationModal({ recommendation, onClose }: RecommendationM
               <Icon className={cn("h-5 w-5", config.color)} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-foreground">AI Recommendation</h3>
+              <h3 id="rec-modal-title" className="text-base font-bold text-foreground">AI Recommendation</h3>
               <div className="flex items-center gap-2 mt-1">
                 <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase", config.bg, config.color)}>
                   {config.label}
@@ -68,7 +81,8 @@ export function RecommendationModal({ recommendation, onClose }: RecommendationM
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Close modal"
+            className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:ring-2 focus-visible:ring-primary"
           >
             <X className="h-4 w-4" />
           </button>
@@ -115,7 +129,7 @@ export function RecommendationModal({ recommendation, onClose }: RecommendationM
                 <Zap className="h-3.5 w-3.5 text-amber-500" />
                 Est. Saving
               </div>
-              <p className="text-lg font-bold text-foreground">{recommendation.estimatedSaving}</p>
+              <p className="text-lg font-bold text-foreground font-mono">{recommendation.estimatedSaving}</p>
             </div>
 
             <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-1.5">
@@ -132,7 +146,7 @@ export function RecommendationModal({ recommendation, onClose }: RecommendationM
         <div className="flex justify-end pt-2">
           <button
             onClick={onClose}
-            className="rounded-xl bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="rounded-xl bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors focus-visible:ring-2 focus-visible:ring-primary"
           >
             Close
           </button>

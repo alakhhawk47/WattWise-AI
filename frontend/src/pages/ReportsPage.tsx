@@ -1,5 +1,5 @@
-// Reports Page — Phase 3 + Phase 4 PDF Generation
-// Campus energy report generation with real downloadable PDF files via jspdf
+// Reports Page — Phase 3 + Phase 5 Final Polish
+// Campus energy report generation with real downloadable PDF files via jspdf, card-hover elevation, and toasts
 
 import { useState } from "react";
 import { FileText, Download, Calendar, HardDrive, CheckCircle, Loader2 } from "lucide-react";
@@ -13,7 +13,7 @@ function generateReportPDF(report: ReportItem) {
   const pageWidth = doc.internal.pageSize.getWidth();
 
   // Header bar
-  doc.setFillColor(22, 78, 46); // primary dark green
+  doc.setFillColor(22, 78, 46);
   doc.rect(0, 0, pageWidth, 35, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
@@ -124,7 +124,6 @@ function generateReportPDF(report: ReportItem) {
   doc.text("WattWise AI — Automated Energy Report", 15, footerY);
   doc.text(`Page 1 of 1`, pageWidth - 35, footerY);
 
-  // Download
   const fileName = `${report.category}_Report.pdf`;
   doc.save(fileName);
 }
@@ -137,13 +136,12 @@ export function ReportsPage() {
   const handleDownload = (report: ReportItem) => {
     setDownloadingId(report.id);
 
-    // Small delay for UX feedback
     setTimeout(() => {
       try {
         generateReportPDF(report);
         showToast({
-          title: "Download Complete",
-          message: `"${report.title}" downloaded as ${report.category}_Report.pdf`,
+          title: "Report Downloaded",
+          message: `"${report.title}" downloaded successfully`,
           type: "success",
           duration: 3500,
         });
@@ -181,12 +179,12 @@ export function ReportsPage() {
         {reports.map((report) => (
           <div
             key={report.id}
-            className="flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-sm hover:border-primary/30 transition-all space-y-4"
+            className="flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-sm card-hover space-y-4"
           >
             <div className="space-y-3">
               {/* Category Badge & Icon */}
               <div className="flex items-center justify-between">
-                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary font-mono">
                   {report.category}
                 </span>
                 <div className="rounded-lg bg-muted p-2 text-muted-foreground">
@@ -208,14 +206,15 @@ export function ReportsPage() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <HardDrive className="h-3.5 w-3.5 text-muted-foreground/70" />
-                  <span>{report.fileSize}</span>
+                  <span className="font-mono">{report.fileSize}</span>
                 </div>
               </div>
 
               <button
                 onClick={() => handleDownload(report)}
                 disabled={downloadingId === report.id}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                aria-label={`Download ${report.title} PDF`}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/90 transition-colors focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {downloadingId === report.id ? (
                   <>
@@ -235,7 +234,7 @@ export function ReportsPage() {
       </div>
 
       {/* Report Generation Banner */}
-      <div className="rounded-2xl border border-border bg-muted/30 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="rounded-2xl border border-border bg-muted/30 p-6 flex flex-col sm:flex-row items-center justify-between gap-4 card-hover">
         <div className="flex items-center gap-3">
           <CheckCircle className="h-6 w-6 text-emerald-500 shrink-0" />
           <div>
@@ -246,8 +245,9 @@ export function ReportsPage() {
           </div>
         </div>
         <button
-          onClick={() => showToast({ message: "Custom report generation scheduled.", type: "info" })}
-          className="rounded-xl border border-border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors shrink-0"
+          onClick={() => showToast({ title: "Custom Audit Scheduled", message: "Custom report generation scheduled for next cycle.", type: "info" })}
+          aria-label="Schedule custom energy audit"
+          className="rounded-xl border border-border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors shrink-0 focus-visible:ring-2 focus-visible:ring-primary"
         >
           Schedule Custom Audit
         </button>

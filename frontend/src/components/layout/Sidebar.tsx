@@ -38,13 +38,15 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
       {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs lg:hidden animate-fade-in"
           onClick={onToggle}
+          aria-hidden="true"
         />
       )}
 
       {/* Sidebar */}
       <aside
+        aria-label="Main sidebar navigation"
         className={cn(
           "fixed left-0 top-0 z-50 flex h-full flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 lg:relative lg:z-auto",
           isOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full lg:w-[72px] lg:translate-x-0"
@@ -66,7 +68,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 p-3">
+        <nav className="flex-1 space-y-1 p-3" aria-label="Sidebar main menu">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
@@ -76,16 +78,18 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 to={item.href}
                 onMouseEnter={() => setHoveredItem(item.href)}
                 onMouseLeave={() => setHoveredItem(null)}
+                aria-label={item.title}
                 className={cn(
                   "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                  "focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
                   active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                 )}
               >
                 <Icon
                   className={cn(
-                    "h-5 w-5 shrink-0 transition-colors",
+                    "h-5 w-5 shrink-0 transition-all duration-200 group-hover:scale-110",
                     active
                       ? "text-sidebar-accent-foreground"
                       : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground/80"
@@ -102,7 +106,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
 
                 {/* Tooltip for collapsed sidebar */}
                 {!isOpen && hoveredItem === item.href && (
-                  <div className="absolute left-full ml-2 hidden rounded-md bg-popover px-2.5 py-1.5 text-xs font-medium text-popover-foreground shadow-md lg:block">
+                  <div className="absolute left-full ml-2 hidden rounded-md bg-popover px-2.5 py-1.5 text-xs font-medium text-popover-foreground shadow-md lg:block animate-fade-in z-50">
                     {item.title}
                   </div>
                 )}
@@ -120,7 +124,8 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
         <div className="hidden border-t border-sidebar-border p-3 lg:block">
           <button
             onClick={onToggle}
-            className="flex w-full items-center justify-center rounded-lg p-2 text-sidebar-foreground/50 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
+            aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
+            className="flex w-full items-center justify-center rounded-lg p-2 text-sidebar-foreground/50 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary"
           >
             <ChevronLeft
               className={cn(

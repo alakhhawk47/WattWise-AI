@@ -90,34 +90,30 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
   const matchingClassrooms = searchQuery.trim()
     ? classrooms.filter((c) => {
         const q = searchQuery.toLowerCase();
-        // Match by room name, room id, or status
         const matchesBasic =
           c.name.toLowerCase().includes(q) ||
           c.id.toLowerCase().includes(q) ||
           c.status.toLowerCase().includes(q);
-        // Match "alert" keyword — show rooms that have alerts
         const matchesAlert =
           q === "alert" || q === "alerts"
             ? alerts.some((a) => a.roomId === c.id)
             : false;
-        // Match "high" for high-usage
         const matchesHigh = q.includes("high") && c.status === "high-usage";
         return matchesBasic || matchesAlert || matchesHigh;
       })
     : [];
 
-  // Auto-navigate when exactly one room matches a room number pattern
+  // Auto-navigate when exactly one room matches a 3-digit room number
   useEffect(() => {
     if (!searchQuery.trim() || !showSearchResults) return;
     const q = searchQuery.trim().toLowerCase();
-    // Check if user typed a room number like "101", "201", etc.
     const isRoomNumber = /^\d{3}$/.test(q);
     if (isRoomNumber && matchingClassrooms.length === 1) {
       const timer = setTimeout(() => {
         navigate(`/classrooms/${matchingClassrooms[0].id}`);
         setSearchQuery("");
         setShowSearchResults(false);
-      }, 600);
+      }, 550);
       return () => clearTimeout(timer);
     }
   }, [searchQuery, matchingClassrooms, showSearchResults, navigate, setSearchQuery]);
@@ -140,7 +136,8 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
         {/* Mobile menu button */}
         <button
           onClick={onMenuToggle}
-          className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors lg:hidden"
+          aria-label="Toggle navigation menu"
+          className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary lg:hidden"
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -165,11 +162,13 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
             }}
             onFocus={() => setShowSearchResults(true)}
             placeholder="Search rooms, status, alerts..."
-            className="h-9 w-64 rounded-lg border border-input bg-muted/50 pl-9 pr-8 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            aria-label="Search classrooms, status or alerts"
+            className="h-9 w-64 rounded-lg border border-input bg-muted/50 pl-9 pr-8 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-200 focus:w-72"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
+              aria-label="Clear search query"
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               <X className="h-3.5 w-3.5" />
@@ -188,15 +187,15 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
                     <button
                       key={room.id}
                       onClick={() => handleSelectRoom(room.id)}
-                      className="w-full flex items-center justify-between rounded-lg p-2 text-left hover:bg-muted transition-colors text-xs"
+                      className="w-full flex items-center justify-between rounded-lg p-2 text-left hover:bg-muted transition-colors text-xs focus-visible:ring-2 focus-visible:ring-primary"
                     >
                       <div>
                         <span className="font-semibold text-foreground">{room.name}</span>
-                        <span className="ml-2 text-muted-foreground">{room.currentPower} kW</span>
+                        <span className="ml-2 text-muted-foreground font-mono">{room.currentPower} kW</span>
                       </div>
                       <span
                         className={cn(
-                          "rounded-full px-2 py-0.5 text-[10px] font-medium uppercase",
+                          "rounded-full px-2 py-0.5 text-[10px] font-medium uppercase font-mono",
                           room.status === "high-usage" && "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400",
                           room.status === "warning" && "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",
                           room.status === "normal" && "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
@@ -222,8 +221,9 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}
-          className="relative rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          className="relative rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary"
           title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+          aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
         >
           {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
         </button>
@@ -232,12 +232,13 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
         <div ref={notifRef} className="relative">
           <button
             onClick={() => setShowNotifications((prev) => !prev)}
-            className="relative rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            aria-label={`Notifications: ${unreadCount} unread`}
+            className="relative rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary"
             title="Notifications"
           >
             <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
-              <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+              <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground animate-pulse-live">
                 {unreadCount}
               </span>
             )}
@@ -250,7 +251,7 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
                 <div className="flex items-center gap-2">
                   <h4 className="text-sm font-semibold text-foreground">Notifications</h4>
                   {unreadCount > 0 && (
-                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary font-mono">
                       {unreadCount} new
                     </span>
                   )}
@@ -258,14 +259,16 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={markAllAlertsRead}
-                    className="p-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
+                    aria-label="Mark all alerts as read"
+                    className="p-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:ring-2 focus-visible:ring-primary"
                     title="Mark all as read"
                   >
                     <Check className="h-3.5 w-3.5" />
                   </button>
                   <button
                     onClick={clearAllAlerts}
-                    className="p-1 rounded-md text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    aria-label="Clear all notifications"
+                    className="p-1 rounded-md text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors focus-visible:ring-2 focus-visible:ring-destructive"
                     title="Clear all"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -287,7 +290,7 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
                         key={alert.id}
                         onClick={() => handleAlertClick(alert.roomId)}
                         className={cn(
-                          "w-full flex items-start gap-2.5 rounded-lg p-2.5 text-xs text-left transition-colors cursor-pointer hover:bg-muted/60",
+                          "w-full flex items-start gap-2.5 rounded-lg p-2.5 text-xs text-left transition-colors cursor-pointer hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary",
                           alert.isRead ? "bg-card" : "bg-muted/60 font-medium"
                         )}
                       >
@@ -295,7 +298,7 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
                             <p className="font-semibold text-foreground">{alert.roomName}</p>
-                            <span className={cn("shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase", SEVERITY_BADGES[alert.severity])}>
+                            <span className={cn("shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase font-mono", SEVERITY_BADGES[alert.severity])}>
                               {alert.severity}
                             </span>
                           </div>
@@ -340,7 +343,8 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
 
           <button
             onClick={handleSignOut}
-            className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+            aria-label="Sign out"
+            className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors focus-visible:ring-2 focus-visible:ring-destructive"
             title="Sign out"
           >
             <LogOut className="h-4 w-4" />

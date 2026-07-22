@@ -1,6 +1,7 @@
-// AI Health Details Modal — Phase 4
-// Displays comprehensive AI system health breakdown with prediction metrics and room status counts
+// AI Health Details Modal — Phase 5
+// Displays comprehensive AI system health breakdown with prediction metrics, room status counts, ESC listener & backdrop blur
 
+import { useEffect } from "react";
 import { X, Brain, ShieldCheck, AlertTriangle, ShieldAlert, Activity, BarChart3, Cpu } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { cn } from "@/lib/utils";
@@ -12,6 +13,15 @@ interface AIHealthModalProps {
 export function AIHealthModal({ onClose }: AIHealthModalProps) {
   const { classrooms, summaryCards } = useApp();
 
+  // Close modal on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   // Compute room counts from live data
   const healthyRooms = classrooms.filter((c) => c.status === "normal").length;
   const warningRooms = classrooms.filter((c) => c.status === "warning").length;
@@ -21,8 +31,8 @@ export function AIHealthModal({ onClose }: AIHealthModalProps) {
   const aiHealthCard = summaryCards.find((c) => c.title === "AI Health Score");
   const aiScore = aiHealthCard ? parseInt(aiHealthCard.value) : 94;
 
-  const predictionConfidence = Math.min(99, aiScore + Math.floor(Math.random() * 3));
-  const avgAccuracy = Math.min(98, aiScore - 2 + Math.floor(Math.random() * 4));
+  const predictionConfidence = Math.min(99, aiScore + 2);
+  const avgAccuracy = Math.min(98, aiScore - 1);
 
   const aiStatus = aiScore >= 90 ? "Optimal" : aiScore >= 80 ? "Good" : "Degraded";
   const statusColor =
@@ -36,6 +46,9 @@ export function AIHealthModal({ onClose }: AIHealthModalProps) {
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop"
       onClick={(e) => e.target === e.currentTarget && onClose()}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ai-health-modal-title"
     >
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-in space-y-5">
         {/* Header */}
@@ -45,13 +58,14 @@ export function AIHealthModal({ onClose }: AIHealthModalProps) {
               <Brain className="h-5 w-5 text-violet-600 dark:text-violet-400" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-foreground">AI Health Details</h3>
+              <h3 id="ai-health-modal-title" className="text-base font-bold text-foreground">AI Health Details</h3>
               <p className="text-xs text-muted-foreground">WattWise AI prediction engine status</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Close modal"
+            className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:ring-2 focus-visible:ring-primary"
           >
             <X className="h-4 w-4" />
           </button>
@@ -59,7 +73,7 @@ export function AIHealthModal({ onClose }: AIHealthModalProps) {
 
         {/* AI Score Hero */}
         <div className="text-center py-3 space-y-1">
-          <p className="text-5xl font-bold text-foreground">{aiScore}%</p>
+          <p className="text-5xl font-bold text-foreground font-mono">{aiScore}%</p>
           <p className={cn("text-sm font-semibold", statusColor)}>
             {aiStatus} — {aiStatus === "Optimal" ? "All systems running smoothly" : aiStatus === "Good" ? "Minor calibration needed" : "Attention required"}
           </p>
@@ -73,7 +87,7 @@ export function AIHealthModal({ onClose }: AIHealthModalProps) {
               <Activity className="h-3 w-3 text-primary" />
               Prediction Confidence
             </div>
-            <p className="text-xl font-bold text-foreground">{predictionConfidence}%</p>
+            <p className="text-xl font-bold text-foreground font-mono">{predictionConfidence}%</p>
           </div>
 
           {/* Average Accuracy */}
@@ -82,7 +96,7 @@ export function AIHealthModal({ onClose }: AIHealthModalProps) {
               <BarChart3 className="h-3 w-3 text-blue-500" />
               Avg Accuracy
             </div>
-            <p className="text-xl font-bold text-foreground">{avgAccuracy}%</p>
+            <p className="text-xl font-bold text-foreground font-mono">{avgAccuracy}%</p>
           </div>
         </div>
 
@@ -95,7 +109,7 @@ export function AIHealthModal({ onClose }: AIHealthModalProps) {
               <ShieldCheck className="h-4 w-4 text-emerald-500" />
               <span className="text-sm font-medium text-foreground">Healthy Rooms</span>
             </div>
-            <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{healthyRooms}</span>
+            <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono">{healthyRooms}</span>
           </div>
 
           <div className="flex items-center justify-between rounded-xl border border-amber-200/50 dark:border-amber-500/20 bg-amber-50/50 dark:bg-amber-500/5 p-3">
@@ -103,7 +117,7 @@ export function AIHealthModal({ onClose }: AIHealthModalProps) {
               <AlertTriangle className="h-4 w-4 text-amber-500" />
               <span className="text-sm font-medium text-foreground">Warning Rooms</span>
             </div>
-            <span className="text-lg font-bold text-amber-600 dark:text-amber-400">{warningRooms}</span>
+            <span className="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono">{warningRooms}</span>
           </div>
 
           <div className="flex items-center justify-between rounded-xl border border-red-200/50 dark:border-red-500/20 bg-red-50/50 dark:bg-red-500/5 p-3">
@@ -111,7 +125,7 @@ export function AIHealthModal({ onClose }: AIHealthModalProps) {
               <ShieldAlert className="h-4 w-4 text-red-500" />
               <span className="text-sm font-medium text-foreground">High Risk Rooms</span>
             </div>
-            <span className="text-lg font-bold text-red-600 dark:text-red-400">{highRiskRooms}</span>
+            <span className="text-lg font-bold text-red-600 dark:text-red-400 font-mono">{highRiskRooms}</span>
           </div>
         </div>
 
@@ -131,7 +145,7 @@ export function AIHealthModal({ onClose }: AIHealthModalProps) {
         <div className="flex justify-end pt-1">
           <button
             onClick={onClose}
-            className="rounded-xl bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="rounded-xl bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors focus-visible:ring-2 focus-visible:ring-primary"
           >
             Close
           </button>

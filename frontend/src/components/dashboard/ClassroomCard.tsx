@@ -1,6 +1,5 @@
 // Classroom Card — displays individual classroom status
-// Shows room name, occupancy, power, and status badge
-// Clickable — navigates to /classrooms/:id
+// Shows room name, occupancy, power, and status badge with hover elevation and keyboard focus
 
 import { useNavigate } from "react-router-dom";
 import { Users, Zap, Thermometer } from "lucide-react";
@@ -41,11 +40,12 @@ export function ClassroomCard({ classroom }: ClassroomCardProps) {
   return (
     <button
       onClick={() => navigate(`/classrooms/${classroom.id}`)}
+      aria-label={`${classroom.name}, Status: ${config.label}, Power: ${classroom.currentPower} kW, Occupancy: ${classroom.occupancy} of 45`}
       className={cn(
         "group relative w-full overflow-hidden rounded-xl border border-border bg-card p-4 text-left",
         "transition-all duration-300 hover:shadow-md hover:shadow-black/5 dark:hover:shadow-black/20",
-        "hover:-translate-y-0.5 hover:border-primary/30",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        "hover:-translate-y-0.5 hover:scale-[1.015] hover:border-primary/30",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       )}
     >
       {/* Status indicator line at top */}
@@ -81,7 +81,7 @@ export function ClassroomCard({ classroom }: ClassroomCardProps) {
               <Users className="h-3 w-3" />
               <span>Occupancy</span>
             </div>
-            <span className="text-xs font-medium text-foreground">
+            <span className="text-xs font-medium text-foreground font-mono">
               {classroom.occupancy}/45
             </span>
           </div>
@@ -104,13 +104,13 @@ export function ClassroomCard({ classroom }: ClassroomCardProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Zap className="h-3 w-3 text-amber-500" />
-            <span className="font-medium text-foreground">
+            <span className="font-medium text-foreground font-mono">
               {classroom.currentPower} kW
             </span>
           </div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Thermometer className="h-3 w-3 text-blue-500" />
-            <span className="font-medium text-foreground">
+            <span className="font-medium text-foreground font-mono">
               {classroom.temperature}°C
             </span>
           </div>

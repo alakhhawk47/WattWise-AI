@@ -1,5 +1,5 @@
 // Power Distribution — Bar Chart
-// Shows power usage by building zone
+// Shows power usage by building zone with smooth rising bar animation
 
 import { memo } from "react";
 import {
@@ -20,7 +20,7 @@ interface PowerBarChartProps {
 
 export const PowerBarChart = memo(function PowerBarChart({ data }: PowerBarChartProps) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-2xl border border-border bg-card p-5 card-hover">
       <div className="mb-4">
         <h3 className="text-sm font-semibold text-foreground">Power Distribution</h3>
         <p className="text-xs text-muted-foreground">By building zone (kW)</p>
@@ -52,7 +52,15 @@ export const PowerBarChart = memo(function PowerBarChart({ data }: PowerBarChart
               labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
               cursor={{ fill: "hsl(var(--muted))", opacity: 0.3 }}
             />
-            <Bar dataKey="power" name="Power (kW)" radius={[6, 6, 0, 0]} maxBarSize={48}>
+            <Bar
+              dataKey="power"
+              name="Power (kW)"
+              radius={[6, 6, 0, 0]}
+              maxBarSize={48}
+              isAnimationActive={true}
+              animationDuration={800}
+              animationEasing="ease-out"
+            >
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />
               ))}

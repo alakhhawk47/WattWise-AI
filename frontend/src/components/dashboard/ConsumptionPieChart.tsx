@@ -1,5 +1,5 @@
 // Energy Consumption Breakdown — Pie Chart
-// Shows percentage breakdown by category
+// Shows percentage breakdown by category with rotating entry animation
 
 import { memo } from "react";
 import {
@@ -20,7 +20,7 @@ export const ConsumptionPieChart = memo(function ConsumptionPieChart({ data }: C
   const total = data.reduce((sum, d) => sum + d.value, 0);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-2xl border border-border bg-card p-5 card-hover">
       <div className="mb-4">
         <h3 className="text-sm font-semibold text-foreground">Energy Consumption</h3>
         <p className="text-xs text-muted-foreground">Breakdown by category</p>
@@ -37,6 +37,9 @@ export const ConsumptionPieChart = memo(function ConsumptionPieChart({ data }: C
               paddingAngle={3}
               dataKey="value"
               strokeWidth={0}
+              isAnimationActive={true}
+              animationDuration={1000}
+              animationEasing="ease-out"
             >
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />

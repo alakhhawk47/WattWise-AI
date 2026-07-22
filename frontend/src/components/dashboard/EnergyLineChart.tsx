@@ -1,5 +1,5 @@
 // Daily Energy Usage — Line Chart
-// Displays actual vs predicted energy usage over 24 hours
+// Displays actual vs predicted energy usage over 24 hours with smooth load animation
 
 import { memo } from "react";
 import {
@@ -20,7 +20,7 @@ interface EnergyLineChartProps {
 
 export const EnergyLineChart = memo(function EnergyLineChart({ data }: EnergyLineChartProps) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-2xl border border-border bg-card p-5 card-hover">
       <div className="mb-4">
         <h3 className="text-sm font-semibold text-foreground">Daily Energy Usage</h3>
         <p className="text-xs text-muted-foreground">Actual vs Predicted (kWh)</p>
@@ -73,6 +73,9 @@ export const EnergyLineChart = memo(function EnergyLineChart({ data }: EnergyLin
               strokeWidth={2.5}
               dot={false}
               activeDot={{ r: 4, strokeWidth: 2 }}
+              isAnimationActive={true}
+              animationDuration={900}
+              animationEasing="ease-out"
             />
             <Line
               type="monotone"
@@ -83,6 +86,9 @@ export const EnergyLineChart = memo(function EnergyLineChart({ data }: EnergyLin
               strokeDasharray="6 3"
               dot={false}
               activeDot={{ r: 4, strokeWidth: 2 }}
+              isAnimationActive={true}
+              animationDuration={1100}
+              animationEasing="ease-out"
             />
           </LineChart>
         </ResponsiveContainer>

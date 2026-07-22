@@ -1,5 +1,5 @@
-// Settings Page — Phase 3 + Phase 4 About Section
-// Full application settings persisted in localStorage with theme controls, auto refresh rate, dev mode, about section, and sign out
+// Settings Page — Phase 3 + Phase 5 Final Polish
+// Full application settings persisted in localStorage with theme controls, auto refresh rate, dev mode, toast feedback, and about section
 
 import { useNavigate } from "react-router-dom";
 import {
@@ -30,6 +30,17 @@ export function SettingsPage() {
   const { showToast } = useToast();
   const navigate = useNavigate();
 
+  const handleToggleTheme = () => {
+    toggleTheme();
+    const nextTheme = theme === "light" ? "Dark" : "Light";
+    showToast({
+      title: "Theme Changed",
+      message: `Switched to ${nextTheme} mode`,
+      type: "info",
+      duration: 2000,
+    });
+  };
+
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -58,7 +69,7 @@ export function SettingsPage() {
       {/* Settings Sections */}
       <div className="space-y-4">
         {/* Appearance & Theme */}
-        <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-4 card-hover">
           <div className="flex items-center gap-2 pb-2 border-b border-border">
             <Sun className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">Appearance</h3>
@@ -72,8 +83,9 @@ export function SettingsPage() {
               </p>
             </div>
             <button
-              onClick={toggleTheme}
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors"
+              onClick={handleToggleTheme}
+              aria-label={`Toggle theme to ${theme === "light" ? "dark" : "light"} mode`}
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors focus-visible:ring-2 focus-visible:ring-primary"
             >
               {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
               Toggle to {theme === "light" ? "Dark" : "Light"}
@@ -82,7 +94,7 @@ export function SettingsPage() {
         </div>
 
         {/* Real-time Data & Refresh Rate */}
-        <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-4 card-hover">
           <div className="flex items-center gap-2 pb-2 border-b border-border">
             <RefreshCw className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">Data Telemetry & Refresh</h3>
@@ -100,10 +112,15 @@ export function SettingsPage() {
               onClick={() => {
                 const updated = !settings.autoRefreshEnabled;
                 updateSettings({ autoRefreshEnabled: updated });
-                showToast({ message: `Auto refresh ${updated ? "enabled" : "disabled"}.` });
+                showToast({
+                  title: "Settings Saved",
+                  message: `Auto refresh ${updated ? "enabled" : "disabled"}`,
+                  type: "success",
+                });
               }}
+              aria-label="Toggle auto refresh data"
               className={cn(
-                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 settings.autoRefreshEnabled ? "bg-primary" : "bg-muted-foreground/30"
               )}
             >
@@ -130,9 +147,14 @@ export function SettingsPage() {
               onChange={(e) => {
                 const val = Number(e.target.value);
                 updateSettings({ refreshInterval: val });
-                showToast({ message: `Refresh interval set to ${val} seconds.` });
+                showToast({
+                  title: "Settings Saved",
+                  message: `Refresh interval set to ${val} seconds`,
+                  type: "success",
+                });
               }}
-              className="rounded-lg border border-input bg-muted/50 px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              aria-label="Select refresh interval"
+              className="rounded-lg border border-input bg-muted/50 px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value={3}>Every 3 seconds</option>
               <option value={5}>Every 5 seconds (Default)</option>
@@ -143,7 +165,7 @@ export function SettingsPage() {
         </div>
 
         {/* Notifications & System Preferences */}
-        <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-4 card-hover">
           <div className="flex items-center gap-2 pb-2 border-b border-border">
             <Bell className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">Notifications & Alerts</h3>
@@ -158,10 +180,15 @@ export function SettingsPage() {
               onClick={() => {
                 const updated = !settings.notificationsEnabled;
                 updateSettings({ notificationsEnabled: updated });
-                showToast({ message: `Notifications ${updated ? "enabled" : "disabled"}.` });
+                showToast({
+                  title: "Settings Saved",
+                  message: `Notifications ${updated ? "enabled" : "disabled"}`,
+                  type: "success",
+                });
               }}
+              aria-label="Toggle notifications"
               className={cn(
-                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 settings.notificationsEnabled ? "bg-primary" : "bg-muted-foreground/30"
               )}
             >
@@ -176,7 +203,7 @@ export function SettingsPage() {
         </div>
 
         {/* Developer Options */}
-        <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-4 card-hover">
           <div className="flex items-center gap-2 pb-2 border-b border-border">
             <Terminal className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">Developer Options</h3>
@@ -191,10 +218,15 @@ export function SettingsPage() {
               onClick={() => {
                 const updated = !settings.devMode;
                 updateSettings({ devMode: updated });
-                showToast({ message: `Developer mode ${updated ? "enabled" : "disabled"}.` });
+                showToast({
+                  title: "Settings Saved",
+                  message: `Developer mode ${updated ? "enabled" : "disabled"}`,
+                  type: "info",
+                });
               }}
+              aria-label="Toggle developer mode"
               className={cn(
-                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 settings.devMode ? "bg-primary" : "bg-muted-foreground/30"
               )}
             >
@@ -209,7 +241,7 @@ export function SettingsPage() {
         </div>
 
         {/* About & Project Info */}
-        <div className="rounded-2xl border border-border bg-card p-6 space-y-5">
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-5 card-hover">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
@@ -220,7 +252,7 @@ export function SettingsPage() {
                 <p className="text-xs text-muted-foreground">Smart Classroom Energy Monitoring Dashboard</p>
               </div>
             </div>
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary font-mono">
               v1.2.0-MVP
             </span>
           </div>
@@ -259,7 +291,7 @@ export function SettingsPage() {
             <div className="space-y-1.5 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Version</span>
-                <span className="font-medium text-foreground">1.2.0-MVP</span>
+                <span className="font-medium text-foreground font-mono">1.2.0-MVP</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Current Build</span>
@@ -295,7 +327,8 @@ export function SettingsPage() {
         <div className="pt-2">
           <button
             onClick={handleSignOut}
-            className="flex items-center justify-center gap-2 w-full rounded-xl border border-red-200 bg-red-50 dark:bg-red-500/10 dark:border-red-500/20 px-4 py-3 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors"
+            aria-label="Sign out of application"
+            className="flex items-center justify-center gap-2 w-full rounded-xl border border-red-200 bg-red-50 dark:bg-red-500/10 dark:border-red-500/20 px-4 py-3 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors focus-visible:ring-2 focus-visible:ring-red-500"
           >
             <LogOut className="h-4 w-4" />
             Sign Out of Application

@@ -1,5 +1,5 @@
-// Dashboard Page — Phase 2A + Phase 4 Polish
-// Full SaaS-style energy monitoring dashboard with live data, interactive cards, modals, and refresh UX
+// Dashboard Page — Phase 2A + Phase 5 Final Polish
+// Full SaaS-style energy monitoring dashboard with live data, interactive cards, modals, refresh UX, and skeleton loading
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -7,6 +7,7 @@ import { LayoutDashboard, RefreshCw } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/components/ui/Toast";
+import { DashboardSkeleton } from "@/components/ui/Skeleton";
 import { SummaryCard } from "@/components/dashboard/SummaryCard";
 import { ClassroomGrid } from "@/components/dashboard/ClassroomGrid";
 import { EnergyLineChart } from "@/components/dashboard/EnergyLineChart";
@@ -38,15 +39,14 @@ export function DashboardPage() {
 
   const handleRefresh = () => {
     refresh();
-    // Show toast after data refresh completes
     setTimeout(() => {
       showToast({
         title: "Data Refreshed",
-        message: "Data updated successfully",
+        message: "Telemetry and AI recommendations updated successfully",
         type: "success",
         duration: 2500,
       });
-    }, 600);
+    }, 550);
   };
 
   // Summary card click handlers
@@ -54,25 +54,13 @@ export function DashboardPage() {
     "Today's Energy": () => navigate("/analytics"),
     "Carbon Saved": () => navigate("/reports"),
     "Active Alerts": () => {
-      // Scroll to alerts section
       document.getElementById("alerts-section")?.scrollIntoView({ behavior: "smooth" });
     },
     "AI Health Score": () => setShowAIHealthModal(true),
   };
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="relative">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-primary" />
-          </div>
-          <p className="text-sm text-muted-foreground animate-pulse">
-            Loading dashboard...
-          </p>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
@@ -93,20 +81,20 @@ export function DashboardPage() {
 
         {/* Live indicator + Refresh */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5">
+          <div className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 shadow-sm">
             {settings.autoRefreshEnabled ? (
               <>
                 <span className="relative flex h-2.5 w-2.5">
                   <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75 animate-pulse-live" />
                   <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
                 </span>
-                <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">LIVE</span>
+                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">LIVE</span>
                 <span className="text-xs text-muted-foreground">
                   · Updating every {settings.refreshInterval}s
                 </span>
               </>
             ) : (
-              <span className="text-xs font-medium text-muted-foreground">
+              <span className="text-xs font-medium text-muted-foreground font-mono">
                 Updated {lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
               </span>
             )}
@@ -114,13 +102,14 @@ export function DashboardPage() {
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
+            aria-label="Refresh dashboard data"
             className={cn(
               "rounded-lg border border-border bg-card p-2 text-muted-foreground",
               "hover:bg-muted hover:text-foreground transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
               "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
-            title="Refresh data"
+            title="Refresh telemetry"
           >
             <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
           </button>
@@ -149,7 +138,7 @@ export function DashboardPage() {
       <div>
         <div className="mb-4 flex items-center gap-2">
           <h2 className="text-lg font-semibold text-foreground">Live Campus Overview</h2>
-          <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+          <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary font-mono">
             {classrooms.length} Rooms
           </span>
         </div>

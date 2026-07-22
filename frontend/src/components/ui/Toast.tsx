@@ -1,4 +1,4 @@
-// Lightweight Toast Notification system for WattWise AI
+// Premium Toast Notification system for WattWise AI — Top-Right position
 
 import { useState, useEffect, createContext, useContext, useCallback, type ReactNode } from "react";
 import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
@@ -36,8 +36,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      {/* Toast Render Container */}
-      <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4">
+      {/* Toast Render Container — Top-Right Position */}
+      <div
+        className="fixed top-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4"
+        aria-live="polite"
+        aria-atomic="true"
+      >
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
         ))}
@@ -52,25 +56,40 @@ function ToastItem({ toast, onClose }: { toast: ToastMessage; onClose: () => voi
     return () => clearTimeout(timer);
   }, [toast, onClose]);
 
-  const icons = {
-    success: <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />,
-    error: <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />,
-    info: <Info className="h-5 w-5 text-blue-500 shrink-0" />,
-  };
+  const config = {
+    success: {
+      icon: <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />,
+      border: "border-emerald-500/30 dark:border-emerald-500/20",
+      bg: "bg-emerald-50/90 dark:bg-emerald-950/40",
+    },
+    error: {
+      icon: <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />,
+      border: "border-red-500/30 dark:border-red-500/20",
+      bg: "bg-red-50/90 dark:bg-red-950/40",
+    },
+    info: {
+      icon: <Info className="h-5 w-5 text-blue-500 shrink-0" />,
+      border: "border-blue-500/30 dark:border-blue-500/20",
+      bg: "bg-blue-50/90 dark:bg-blue-950/40",
+    },
+  }[toast.type || "success"];
 
   return (
     <div
       className={cn(
-        "pointer-events-auto flex items-start gap-3 rounded-xl border border-border bg-card p-4 shadow-xl text-foreground animate-in fade-in slide-in-from-bottom-3 duration-200"
+        "pointer-events-auto flex items-start gap-3 rounded-xl border bg-card/95 backdrop-blur-md p-4 shadow-xl text-foreground",
+        "transition-all duration-300 animate-slide-up",
+        config.border
       )}
     >
-      {icons[toast.type || "success"]}
+      {config.icon}
       <div className="flex-1 text-xs">
-        {toast.title && <p className="font-semibold text-foreground mb-0.5">{toast.title}</p>}
-        <p className="text-muted-foreground">{toast.message}</p>
+        {toast.title && <p className="font-bold text-foreground mb-0.5">{toast.title}</p>}
+        <p className="text-muted-foreground leading-relaxed">{toast.message}</p>
       </div>
       <button
         onClick={onClose}
+        aria-label="Close notification"
         className="rounded-lg p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
       >
         <X className="h-3.5 w-3.5" />

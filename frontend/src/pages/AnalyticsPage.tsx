@@ -1,5 +1,5 @@
-// Analytics Page — Phase 3
-// Comprehensive campus energy analytics, trend charts, rankings, and risk distribution
+// Analytics Page — Phase 3 + Phase 5 Polish
+// Comprehensive campus energy analytics, trend charts, rankings, risk distribution, and smooth chart animations
 
 import { BarChart3, TrendingUp, Leaf, Users, ShieldAlert, PieChart as PieIcon } from "lucide-react";
 import {
@@ -30,7 +30,7 @@ export function AnalyticsPage() {
   const lowestEnergyRooms = sortedByPower.slice(-5).reverse();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="rounded-lg bg-primary/10 p-2">
@@ -47,44 +47,44 @@ export function AnalyticsPage() {
       {/* Top Stat Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Carbon Savings Total */}
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-2xl border border-border bg-card p-5 card-hover">
           <div className="flex items-center justify-between text-muted-foreground mb-2">
             <span className="text-xs font-medium">Total Carbon Saved</span>
             <Leaf className="h-4 w-4 text-emerald-500" />
           </div>
-          <p className="text-2xl font-bold text-foreground">{analytics.carbonSavedTotal} kg</p>
+          <p className="text-2xl font-bold text-foreground font-mono">{analytics.carbonSavedTotal} kg</p>
           <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
             +14% vs last month
           </p>
         </div>
 
         {/* Avg Occupancy */}
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-2xl border border-border bg-card p-5 card-hover">
           <div className="flex items-center justify-between text-muted-foreground mb-2">
             <span className="text-xs font-medium">Average Occupancy</span>
             <Users className="h-4 w-4 text-primary" />
           </div>
-          <p className="text-2xl font-bold text-foreground">{analytics.avgOccupancy} students</p>
+          <p className="text-2xl font-bold text-foreground font-mono">{analytics.avgOccupancy} students</p>
           <p className="text-xs text-muted-foreground mt-1">Per active classroom</p>
         </div>
 
         {/* Peak Demand */}
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-2xl border border-border bg-card p-5 card-hover">
           <div className="flex items-center justify-between text-muted-foreground mb-2">
             <span className="text-xs font-medium">Peak Campus Power</span>
             <TrendingUp className="h-4 w-4 text-amber-500" />
           </div>
-          <p className="text-2xl font-bold text-foreground">38.4 kW</p>
+          <p className="text-2xl font-bold text-foreground font-mono">38.4 kW</p>
           <p className="text-xs text-muted-foreground mt-1">Recorded at 14:00 today</p>
         </div>
 
         {/* High Risk Rooms */}
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-2xl border border-border bg-card p-5 card-hover">
           <div className="flex items-center justify-between text-muted-foreground mb-2">
             <span className="text-xs font-medium">High Risk Classrooms</span>
             <ShieldAlert className="h-4 w-4 text-red-500" />
           </div>
-          <p className="text-2xl font-bold text-foreground">
+          <p className="text-2xl font-bold text-foreground font-mono">
             {classrooms.filter((c) => c.status === "high-usage").length} Rooms
           </p>
           <p className="text-xs text-red-500 font-semibold mt-1">Requires facility action</p>
@@ -94,7 +94,7 @@ export function AnalyticsPage() {
       {/* Row 1: Daily Energy Trend & Risk Distribution */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Daily Energy Trend */}
-        <div className="rounded-2xl border border-border bg-card p-5 lg:col-span-2 space-y-4">
+        <div className="rounded-2xl border border-border bg-card p-5 lg:col-span-2 space-y-4 card-hover">
           <div>
             <h3 className="text-sm font-semibold text-foreground">Daily Energy Consumption Trend</h3>
             <p className="text-xs text-muted-foreground">Hourly actual energy vs AI predicted model (kWh)</p>
@@ -114,15 +114,15 @@ export function AnalyticsPage() {
                   }}
                 />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: "0.75rem" }} />
-                <Line type="monotone" dataKey="actual" name="Actual Usage" stroke="hsl(142, 55%, 42%)" strokeWidth={2.5} dot={false} />
-                <Line type="monotone" dataKey="predicted" name="AI Target" stroke="hsl(80, 75%, 50%)" strokeWidth={2} strokeDasharray="6 3" dot={false} />
+                <Line type="monotone" dataKey="actual" name="Actual Usage" stroke="hsl(142, 55%, 42%)" strokeWidth={2.5} dot={false} isAnimationActive={true} animationDuration={900} />
+                <Line type="monotone" dataKey="predicted" name="AI Target" stroke="hsl(80, 75%, 50%)" strokeWidth={2} strokeDasharray="6 3" dot={false} isAnimationActive={true} animationDuration={1100} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Risk Distribution Pie Chart */}
-        <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+        <div className="rounded-2xl border border-border bg-card p-5 space-y-4 card-hover">
           <div>
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <PieIcon className="h-4 w-4 text-primary" />
@@ -133,7 +133,7 @@ export function AnalyticsPage() {
           <div className="h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={analytics.riskDistribution} cx="50%" cy="45%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value" strokeWidth={0}>
+                <Pie data={analytics.riskDistribution} cx="50%" cy="45%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value" strokeWidth={0} isAnimationActive={true} animationDuration={1000}>
                   {analytics.riskDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
@@ -156,7 +156,7 @@ export function AnalyticsPage() {
       {/* Row 2: Weekly Consumption & Monthly Consumption */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Weekly Consumption */}
-        <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+        <div className="rounded-2xl border border-border bg-card p-5 space-y-4 card-hover">
           <div>
             <h3 className="text-sm font-semibold text-foreground">Weekly Consumption Breakdown</h3>
             <p className="text-xs text-muted-foreground">Actual vs Target consumption by day (kWh)</p>
@@ -175,15 +175,15 @@ export function AnalyticsPage() {
                     fontSize: "0.75rem",
                   }}
                 />
-                <Bar dataKey="actual" name="Actual (kWh)" fill="hsl(142, 55%, 42%)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="target" name="Target (kWh)" fill="hsl(80, 75%, 55%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="actual" name="Actual (kWh)" fill="hsl(142, 55%, 42%)" radius={[4, 4, 0, 0]} isAnimationActive={true} animationDuration={800} />
+                <Bar dataKey="target" name="Target (kWh)" fill="hsl(80, 75%, 55%)" radius={[4, 4, 0, 0]} isAnimationActive={true} animationDuration={1000} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Monthly Consumption */}
-        <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+        <div className="rounded-2xl border border-border bg-card p-5 space-y-4 card-hover">
           <div>
             <h3 className="text-sm font-semibold text-foreground">Monthly Consumption & Savings</h3>
             <p className="text-xs text-muted-foreground">Monthly kWh consumption and energy saved</p>
@@ -202,8 +202,8 @@ export function AnalyticsPage() {
                     fontSize: "0.75rem",
                   }}
                 />
-                <Bar dataKey="consumption" name="Consumed (kWh)" fill="hsl(200, 70%, 50%)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="saved" name="Saved (kWh)" fill="hsl(142, 55%, 42%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="consumption" name="Consumed (kWh)" fill="hsl(200, 70%, 50%)" radius={[4, 4, 0, 0]} isAnimationActive={true} animationDuration={800} />
+                <Bar dataKey="saved" name="Saved (kWh)" fill="hsl(142, 55%, 42%)" radius={[4, 4, 0, 0]} isAnimationActive={true} animationDuration={1000} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -213,7 +213,7 @@ export function AnalyticsPage() {
       {/* Row 3: Highest vs Lowest Energy Classrooms */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Highest Energy Rooms */}
-        <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+        <div className="rounded-2xl border border-border bg-card p-5 space-y-3 card-hover">
           <h3 className="text-sm font-semibold text-foreground flex items-center justify-between">
             <span>Highest Energy Consuming Rooms</span>
             <span className="text-xs text-red-500 font-normal">Top 5</span>
@@ -221,9 +221,9 @@ export function AnalyticsPage() {
 
           <div className="space-y-2">
             {highestEnergyRooms.map((room, idx) => (
-              <div key={room.id} className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-3 text-xs">
+              <div key={room.id} className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-3 text-xs transition-colors hover:bg-muted/50">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/20 font-bold text-red-600 dark:text-red-400">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/20 font-bold text-red-600 dark:text-red-400 font-mono">
                     {idx + 1}
                   </span>
                   <div>
@@ -232,7 +232,7 @@ export function AnalyticsPage() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-foreground">{room.currentPower} kW</p>
+                  <p className="font-bold text-foreground font-mono">{room.currentPower} kW</p>
                   <p className="text-[10px] text-red-500 font-medium">Risk Score: {room.riskScore}</p>
                 </div>
               </div>
@@ -241,7 +241,7 @@ export function AnalyticsPage() {
         </div>
 
         {/* Lowest Energy Rooms */}
-        <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+        <div className="rounded-2xl border border-border bg-card p-5 space-y-3 card-hover">
           <h3 className="text-sm font-semibold text-foreground flex items-center justify-between">
             <span>Most Efficient (Lowest Energy) Rooms</span>
             <span className="text-xs text-emerald-500 font-normal">Top 5</span>
@@ -249,9 +249,9 @@ export function AnalyticsPage() {
 
           <div className="space-y-2">
             {lowestEnergyRooms.map((room, idx) => (
-              <div key={room.id} className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-3 text-xs">
+              <div key={room.id} className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-3 text-xs transition-colors hover:bg-muted/50">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20 font-bold text-emerald-600 dark:text-emerald-400">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20 font-bold text-emerald-600 dark:text-emerald-400 font-mono">
                     {idx + 1}
                   </span>
                   <div>
@@ -260,7 +260,7 @@ export function AnalyticsPage() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-foreground">{room.currentPower} kW</p>
+                  <p className="font-bold text-foreground font-mono">{room.currentPower} kW</p>
                   <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Risk Score: {room.riskScore}</p>
                 </div>
               </div>
