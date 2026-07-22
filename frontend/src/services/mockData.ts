@@ -24,9 +24,6 @@ function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
 
 // --- Classrooms ---
 
@@ -79,6 +76,7 @@ export function generateAlerts(classrooms: Classroom[] = generateClassrooms()): 
     if (room.status === "high-usage") {
       alerts.push({
         id: `alert-high-${room.id}-${now}`,
+        roomId: room.id,
         roomName: room.name,
         message: `High Power Usage detected (${room.currentPower} kW vs ${room.expectedPower} kW expected)`,
         severity: "critical",
@@ -89,6 +87,7 @@ export function generateAlerts(classrooms: Classroom[] = generateClassrooms()): 
       if (room.occupancy < 5 && room.lightsOn) {
         alerts.push({
           id: `alert-empty-${room.id}-${now}`,
+          roomId: room.id,
           roomName: room.name,
           message: `Lights Left ON with low occupancy (${room.occupancy} students)`,
           severity: "warning",
@@ -98,6 +97,7 @@ export function generateAlerts(classrooms: Classroom[] = generateClassrooms()): 
       } else if (room.temperature > 28) {
         alerts.push({
           id: `alert-temp-${room.id}-${now}`,
+          roomId: room.id,
           roomName: room.name,
           message: `Temperature High (${room.temperature}°C) — HVAC overworking`,
           severity: "warning",
@@ -108,6 +108,7 @@ export function generateAlerts(classrooms: Classroom[] = generateClassrooms()): 
     } else if (index % 4 === 0) {
       alerts.push({
         id: `alert-info-${room.id}-${now}`,
+        roomId: room.id,
         roomName: room.name,
         message: `Normal operating efficiency restored`,
         severity: "info",
@@ -131,18 +132,36 @@ export function generateRecommendations(classrooms: Classroom[] = generateClassr
         id: `rec-high-low-${room.id}`,
         message: `High power with low occupancy in ${room.name}. Turn off unused lights & fans.`,
         type: "alert",
+        problem: `${room.name} consuming ${room.currentPower} kW with only ${room.occupancy} students present.`,
+        reason: `Devices left running unnecessarily when occupancy is below threshold (< 10 students).`,
+        suggestedAction: `Automatically turn off ceiling fans and dim lights to 20% in ${room.name}.`,
+        estimatedSaving: `${randomBetween(0.3, 1.2)} kWh/day`,
+        priority: room.currentPower > room.expectedPower * 1.5 ? "Critical" : "High",
+        expectedImpact: `Reduce ${room.name} energy waste by ${randomInt(25, 45)}% during low-occupancy periods.`,
       });
     } else if (room.temperature > 28) {
       recs.push({
         id: `rec-hvac-${room.id}`,
         message: `High temperature (${room.temperature}°C) in ${room.name}. Reduce HVAC runtime.`,
         type: "optimization",
+        problem: `${room.name} temperature at ${room.temperature}°C exceeds comfort zone (24-27°C).`,
+        reason: `HVAC system overcompensating or faulty thermostat calibration detected.`,
+        suggestedAction: `Recalibrate thermostat in ${room.name} and set HVAC to eco-mode (target 25°C).`,
+        estimatedSaving: `${randomBetween(0.5, 1.8)} kWh/day`,
+        priority: room.temperature > 30 ? "High" : "Medium",
+        expectedImpact: `Lower HVAC energy consumption by ${randomInt(15, 30)}% and improve thermal comfort.`,
       });
     } else if (room.status === "normal" && room.riskScore < 25) {
       recs.push({
         id: `rec-normal-${room.id}`,
         message: `${room.name} is operating efficiently (${room.currentPower} kW).`,
         type: "positive",
+        problem: `No issues detected — ${room.name} operating within optimal parameters.`,
+        reason: `All devices running at expected load with appropriate occupancy levels.`,
+        suggestedAction: `Maintain current settings. Consider this room as a benchmark for others.`,
+        estimatedSaving: `Already optimal`,
+        priority: "Low",
+        expectedImpact: `Model room for replicating efficiency patterns across other classrooms.`,
       });
     }
   });
@@ -154,11 +173,23 @@ export function generateRecommendations(classrooms: Classroom[] = generateClassr
         id: "rec-gen-1",
         message: "Reduce overall lighting after classroom hours to save up to 15% energy.",
         type: "optimization",
+        problem: "Lights remain on in multiple classrooms after scheduled hours.",
+        reason: "No automated shutoff policy configured for after-hours lighting.",
+        suggestedAction: "Implement time-based auto-shutoff for all classroom lights after 18:00.",
+        estimatedSaving: `${randomBetween(2.0, 4.5)} kWh/day`,
+        priority: "Medium",
+        expectedImpact: "Campus-wide lighting energy reduction of 12-18% per month.",
       },
       {
         id: "rec-gen-2",
         message: "Room 101 achieved top energy efficiency score today.",
         type: "positive",
+        problem: "No issue — Room 101 is the most efficient classroom today.",
+        reason: "Optimal balance of occupancy, device usage, and HVAC settings.",
+        suggestedAction: "Use Room 101's configuration as a template for other rooms.",
+        estimatedSaving: "Already optimal",
+        priority: "Low",
+        expectedImpact: "Potential 8-12% campus-wide savings if replicated across all rooms.",
       }
     );
   }

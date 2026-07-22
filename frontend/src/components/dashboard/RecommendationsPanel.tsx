@@ -1,9 +1,12 @@
 // AI Recommendations Panel — displays AI-generated suggestions
 // Reusable recommendation cards with type-based styling
+// Clickable cards open the RecommendationModal for full details
 
+import { useState } from "react";
 import { Lightbulb, AlertCircle, CheckCircle2 } from "lucide-react";
 import type { Recommendation } from "@/types";
 import { cn } from "@/lib/utils";
+import { RecommendationModal } from "./RecommendationModal";
 
 const TYPE_CONFIG = {
   optimization: {
@@ -31,6 +34,8 @@ interface RecommendationsPanelProps {
 }
 
 export function RecommendationsPanel({ recommendations }: RecommendationsPanelProps) {
+  const [selectedRec, setSelectedRec] = useState<Recommendation | null>(null);
+
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
       <div className="mb-4 flex items-center gap-2">
@@ -48,10 +53,11 @@ export function RecommendationsPanel({ recommendations }: RecommendationsPanelPr
           const config = TYPE_CONFIG[rec.type];
           const Icon = config.icon;
           return (
-            <div
+            <button
               key={rec.id}
+              onClick={() => setSelectedRec(rec)}
               className={cn(
-                "flex items-start gap-3 rounded-xl border p-3 transition-colors hover:bg-muted/50",
+                "w-full flex items-start gap-3 rounded-xl border p-3 text-left transition-all hover:bg-muted/50 hover:shadow-sm cursor-pointer",
                 config.border
               )}
             >
@@ -61,10 +67,18 @@ export function RecommendationsPanel({ recommendations }: RecommendationsPanelPr
               <p className="text-xs leading-relaxed text-foreground/90">
                 {rec.message}
               </p>
-            </div>
+            </button>
           );
         })}
       </div>
+
+      {/* Recommendation Detail Modal */}
+      {selectedRec && (
+        <RecommendationModal
+          recommendation={selectedRec}
+          onClose={() => setSelectedRec(null)}
+        />
+      )}
     </div>
   );
 }

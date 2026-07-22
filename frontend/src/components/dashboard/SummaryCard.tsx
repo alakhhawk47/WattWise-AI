@@ -41,18 +41,24 @@ const COLOR_STYLES: Record<string, { bg: string; iconBg: string; iconColor: stri
 
 interface SummaryCardProps {
   data: SummaryCardData;
+  onClick?: () => void;
 }
 
-export function SummaryCard({ data }: SummaryCardProps) {
+export function SummaryCard({ data, onClick }: SummaryCardProps) {
   const Icon = ICON_MAP[data.icon] || Zap;
   const colors = COLOR_STYLES[data.color] || COLOR_STYLES.emerald;
 
   return (
     <div
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") onClick(); } : undefined}
       className={cn(
         "group relative overflow-hidden rounded-2xl border bg-gradient-to-br p-5 transition-all duration-300",
         "bg-card hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/20",
         "hover:-translate-y-0.5",
+        onClick && "cursor-pointer",
         colors.border,
         colors.bg
       )}

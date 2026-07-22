@@ -1,11 +1,12 @@
 import { useState, useCallback } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { TopNav } from "./TopNav";
 import { cn } from "@/lib/utils";
 
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const location = useLocation();
 
   const toggleSidebar = useCallback(() => {
     setSidebarOpen((prev) => !prev);
@@ -23,7 +24,9 @@ export function AppLayout() {
             "flex-1 overflow-y-auto p-6 transition-all duration-300"
           )}
         >
-          <Outlet />
+          <div key={location.pathname} className="animate-fade-in">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

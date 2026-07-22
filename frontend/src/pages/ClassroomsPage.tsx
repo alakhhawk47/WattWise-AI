@@ -2,7 +2,7 @@
 // Full campus classrooms monitoring with filtering and search
 
 import { useState } from "react";
-import { School, Search, Filter } from "lucide-react";
+import { School, Filter } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { ClassroomCard } from "@/components/dashboard/ClassroomCard";
 import type { ClassroomStatus } from "@/types";

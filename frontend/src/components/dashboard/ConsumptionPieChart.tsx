@@ -1,6 +1,7 @@
 // Energy Consumption Breakdown — Pie Chart
 // Shows percentage breakdown by category
 
+import { memo } from "react";
 import {
   PieChart,
   Pie,
@@ -15,7 +16,7 @@ interface ConsumptionPieChartProps {
   data: ConsumptionBreakdownPoint[];
 }
 
-export function ConsumptionPieChart({ data }: ConsumptionPieChartProps) {
+export const ConsumptionPieChart = memo(function ConsumptionPieChart({ data }: ConsumptionPieChartProps) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
 
   return (
@@ -49,10 +50,13 @@ export function ConsumptionPieChart({ data }: ConsumptionPieChartProps) {
                 fontSize: "0.75rem",
                 boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
               }}
-              formatter={(value: number) => [
-                `${value.toFixed(1)} kWh (${((value / total) * 100).toFixed(0)}%)`,
-                "",
-              ]}
+              formatter={(value) => {
+                const num = Number(value);
+                return [
+                  `${num.toFixed(1)} kWh (${((num / total) * 100).toFixed(0)}%)`,
+                  "",
+                ];
+              }}
             />
             <Legend
               iconType="circle"
@@ -66,4 +70,4 @@ export function ConsumptionPieChart({ data }: ConsumptionPieChartProps) {
       </div>
     </div>
   );
-}
+});

@@ -1,6 +1,7 @@
 // Power Distribution — Bar Chart
 // Shows power usage by building zone
 
+import { memo } from "react";
 import {
   BarChart,
   Bar,
@@ -17,7 +18,7 @@ interface PowerBarChartProps {
   data: PowerDistributionPoint[];
 }
 
-export function PowerBarChart({ data }: PowerBarChartProps) {
+export const PowerBarChart = memo(function PowerBarChart({ data }: PowerBarChartProps) {
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
       <div className="mb-4">
@@ -61,4 +62,4 @@ export function PowerBarChart({ data }: PowerBarChartProps) {
       </div>
     </div>
   );
-}
+});

@@ -33,6 +33,7 @@ export interface Classroom {
 
 export interface Alert {
   id: string;
+  roomId: string;
   roomName: string;
   message: string;
   severity: "info" | "warning" | "critical";
@@ -44,6 +45,12 @@ export interface Recommendation {
   id: string;
   message: string;
   type: "optimization" | "alert" | "positive";
+  problem: string;
+  reason: string;
+  suggestedAction: string;
+  estimatedSaving: string;
+  priority: "Low" | "Medium" | "High" | "Critical";
+  expectedImpact: string;
 }
 
 export interface SummaryCardData {
@@ -95,4 +102,3 @@ export interface AppSettings {
   refreshInterval: number; // in seconds
   devMode: boolean;
 }
-

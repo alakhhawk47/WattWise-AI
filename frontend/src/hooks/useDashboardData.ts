@@ -10,6 +10,7 @@ export function useDashboardData() {
     summaryCards,
     chartData,
     lastUpdated,
+    isRefreshing,
     refreshData,
   } = useApp();
 
@@ -20,6 +21,7 @@ export function useDashboardData() {
     summaryCards,
     chartData,
     isLoading: false,
+    isRefreshing,
     lastUpdated,
     refresh: refreshData,
   };

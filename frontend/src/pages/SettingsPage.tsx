@@ -1,5 +1,5 @@
-// Settings Page — Phase 3
-// Full application settings persisted in localStorage with theme controls, auto refresh rate, dev mode, and sign out
+// Settings Page — Phase 3 + Phase 4 About Section
+// Full application settings persisted in localStorage with theme controls, auto refresh rate, dev mode, about section, and sign out
 
 import { useNavigate } from "react-router-dom";
 import {
@@ -10,9 +10,12 @@ import {
   RefreshCw,
   Clock,
   Terminal,
-  Info,
   LogOut,
   Zap,
+  Code2,
+  Layers,
+  Server,
+  Gauge,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,7 +41,7 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl animate-fade-in">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="rounded-lg bg-primary/10 p-2">
@@ -205,16 +208,16 @@ export function SettingsPage() {
           </div>
         </div>
 
-        {/* About & Project Credits */}
-        <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
+        {/* About & Project Info */}
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <Zap className="h-4 w-4 text-primary-foreground" />
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+                <Zap className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-foreground">WattWise AI</h4>
-                <p className="text-[10px] text-muted-foreground">Smart Classroom Energy Monitoring Dashboard</p>
+                <h4 className="text-base font-bold text-foreground">WattWise AI</h4>
+                <p className="text-xs text-muted-foreground">Smart Classroom Energy Monitoring Dashboard</p>
               </div>
             </div>
             <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
@@ -222,11 +225,69 @@ export function SettingsPage() {
             </span>
           </div>
 
-          <div className="pt-2 text-xs text-muted-foreground leading-relaxed flex items-start gap-2">
-            <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-            <p>
-              Developed for the <strong>Microsoft 1M1B Showcase Initiative</strong>. Built with React, TypeScript, Tailwind CSS, Recharts, and Supabase.
-            </p>
+          {/* Tech Stack */}
+          <div className="space-y-3 pt-2 border-t border-border">
+            <div className="flex items-center gap-2">
+              <Layers className="h-4 w-4 text-primary" />
+              <h5 className="text-xs font-semibold text-foreground uppercase tracking-wider">Tech Stack</h5>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {[
+                "React",
+                "TypeScript",
+                "Vite",
+                "Tailwind CSS",
+                "Recharts",
+                "Supabase Ready Architecture",
+              ].map((tech) => (
+                <div
+                  key={tech}
+                  className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs font-medium text-foreground text-center"
+                >
+                  {tech}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Build Info */}
+          <div className="space-y-2 pt-2 border-t border-border">
+            <div className="flex items-center gap-2">
+              <Code2 className="h-4 w-4 text-primary" />
+              <h5 className="text-xs font-semibold text-foreground uppercase tracking-wider">Build Info</h5>
+            </div>
+            <div className="space-y-1.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Version</span>
+                <span className="font-medium text-foreground">1.2.0-MVP</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Current Build</span>
+                <span className="font-medium text-foreground font-mono text-[10px]">
+                  {`build-${Date.now().toString(36).slice(-8)}`}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Developer Mode</span>
+                <span className={cn("font-semibold", settings.devMode ? "text-emerald-500" : "text-muted-foreground")}>
+                  {settings.devMode ? "Enabled" : "Disabled"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Environment</span>
+                <div className="flex items-center gap-1.5">
+                  <Server className="h-3 w-3 text-muted-foreground" />
+                  <span className="font-medium text-foreground">Development</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Architecture</span>
+                <div className="flex items-center gap-1.5">
+                  <Gauge className="h-3 w-3 text-muted-foreground" />
+                  <span className="font-medium text-foreground">Client-Side SPA</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

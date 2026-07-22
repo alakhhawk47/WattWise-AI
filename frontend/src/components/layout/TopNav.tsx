@@ -16,6 +16,7 @@ import {
   AlertCircle,
   Info,
   X,
+  Clock,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
@@ -26,6 +27,24 @@ import { cn } from "@/lib/utils";
 interface TopNavProps {
   onMenuToggle: () => void;
 }
+
+function getRelativeTime(date: Date): string {
+  const now = Date.now();
+  const diff = now - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+const SEVERITY_BADGES: Record<string, string> = {
+  critical: "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400",
+  warning: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",
+  info: "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400",
+};
 
 export function TopNav({ onMenuToggle }: TopNavProps) {
   const { user, signOut } = useAuth();
@@ -67,20 +86,51 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filtered search results
+  // Filtered search results — supports room number, status, "alert" keyword
   const matchingClassrooms = searchQuery.trim()
-    ? classrooms.filter(
-        (c) =>
-          c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          c.status.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? classrooms.filter((c) => {
+        const q = searchQuery.toLowerCase();
+        // Match by room name, room id, or status
+        const matchesBasic =
+          c.name.toLowerCase().includes(q) ||
+          c.id.toLowerCase().includes(q) ||
+          c.status.toLowerCase().includes(q);
+        // Match "alert" keyword — show rooms that have alerts
+        const matchesAlert =
+          q === "alert" || q === "alerts"
+            ? alerts.some((a) => a.roomId === c.id)
+            : false;
+        // Match "high" for high-usage
+        const matchesHigh = q.includes("high") && c.status === "high-usage";
+        return matchesBasic || matchesAlert || matchesHigh;
+      })
     : [];
+
+  // Auto-navigate when exactly one room matches a room number pattern
+  useEffect(() => {
+    if (!searchQuery.trim() || !showSearchResults) return;
+    const q = searchQuery.trim().toLowerCase();
+    // Check if user typed a room number like "101", "201", etc.
+    const isRoomNumber = /^\d{3}$/.test(q);
+    if (isRoomNumber && matchingClassrooms.length === 1) {
+      const timer = setTimeout(() => {
+        navigate(`/classrooms/${matchingClassrooms[0].id}`);
+        setSearchQuery("");
+        setShowSearchResults(false);
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+  }, [searchQuery, matchingClassrooms, showSearchResults, navigate, setSearchQuery]);
 
   const handleSelectRoom = (roomId: string) => {
     navigate(`/classrooms/${roomId}`);
     setSearchQuery("");
     setShowSearchResults(false);
+  };
+
+  const handleAlertClick = (roomId: string) => {
+    navigate(`/classrooms/${roomId}`);
+    setShowNotifications(false);
   };
 
   return (
@@ -114,7 +164,7 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
               setShowSearchResults(true);
             }}
             onFocus={() => setShowSearchResults(true)}
-            placeholder="Search classrooms (e.g. 101, High)..."
+            placeholder="Search rooms, status, alerts..."
             className="h-9 w-64 rounded-lg border border-input bg-muted/50 pl-9 pr-8 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
           {searchQuery && (
@@ -128,7 +178,7 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
 
           {/* Search Dropdown Results */}
           {showSearchResults && searchQuery.trim().length > 0 && (
-            <div className="absolute left-0 top-full mt-2 w-80 rounded-xl border border-border bg-card p-2 shadow-xl z-50">
+            <div className="absolute left-0 top-full mt-2 w-80 rounded-xl border border-border bg-card p-2 shadow-xl z-50 animate-slide-up">
               <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Classroom Results ({matchingClassrooms.length})
               </p>
@@ -195,7 +245,7 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
 
           {/* Notifications Panel Dropdown */}
           {showNotifications && (
-            <div className="absolute right-0 top-full mt-2 w-80 rounded-2xl border border-border bg-card p-4 shadow-2xl z-50">
+            <div className="absolute right-0 top-full mt-2 w-80 rounded-2xl border border-border bg-card p-4 shadow-2xl z-50 animate-slide-up">
               <div className="flex items-center justify-between pb-3 border-b border-border">
                 <div className="flex items-center gap-2">
                   <h4 className="text-sm font-semibold text-foreground">Notifications</h4>
@@ -233,19 +283,29 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
                       info: <Info className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-0.5" />,
                     };
                     return (
-                      <div
+                      <button
                         key={alert.id}
+                        onClick={() => handleAlertClick(alert.roomId)}
                         className={cn(
-                          "flex items-start gap-2.5 rounded-lg p-2.5 text-xs transition-colors",
-                          alert.isRead ? "bg-card hover:bg-muted/40" : "bg-muted/60 font-medium"
+                          "w-full flex items-start gap-2.5 rounded-lg p-2.5 text-xs text-left transition-colors cursor-pointer hover:bg-muted/60",
+                          alert.isRead ? "bg-card" : "bg-muted/60 font-medium"
                         )}
                       >
                         {icons[alert.severity]}
                         <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-foreground">{alert.roomName}</p>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-semibold text-foreground">{alert.roomName}</p>
+                            <span className={cn("shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase", SEVERITY_BADGES[alert.severity])}>
+                              {alert.severity}
+                            </span>
+                          </div>
                           <p className="text-muted-foreground mt-0.5 leading-snug">{alert.message}</p>
+                          <div className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground/70">
+                            <Clock className="h-3 w-3" />
+                            {getRelativeTime(alert.timestamp)}
+                          </div>
                         </div>
-                      </div>
+                      </button>
                     );
                   })
                 ) : (

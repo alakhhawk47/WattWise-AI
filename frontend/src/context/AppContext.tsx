@@ -27,6 +27,7 @@ interface AppContextType {
   settings: AppSettings;
   searchQuery: string;
   lastUpdated: Date;
+  isRefreshing: boolean;
   setSearchQuery: (query: string) => void;
   updateSettings: (newSettings: Partial<AppSettings>) => void;
   refreshData: () => void;
@@ -46,6 +47,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [chartData, setChartData] = useState<ChartData>(() => generateChartData());
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [settings, setSettings] = useState<AppSettings>(() => {
     if (typeof window !== "undefined") {
@@ -70,13 +72,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshData = useCallback(() => {
-    const newRooms = generateClassrooms();
-    setClassrooms(newRooms);
-    setAlerts(generateAlerts(newRooms));
-    setRecommendations(generateRecommendations(newRooms));
-    setSummaryCards(getSummaryCards());
-    setChartData(generateChartData());
-    setLastUpdated(new Date());
+    setIsRefreshing(true);
+    // Small delay to show spinner for visual feedback
+    setTimeout(() => {
+      const newRooms = generateClassrooms();
+      setClassrooms(newRooms);
+      setAlerts(generateAlerts(newRooms));
+      setRecommendations(generateRecommendations(newRooms));
+      setSummaryCards(getSummaryCards());
+      setChartData(generateChartData());
+      setLastUpdated(new Date());
+      setIsRefreshing(false);
+    }, 500);
   }, []);
 
   // Auto-refresh timer based on settings
@@ -85,11 +92,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const intervalMs = settings.refreshInterval * 1000;
     const timer = setInterval(() => {
-      refreshData();
+      const newRooms = generateClassrooms();
+      setClassrooms(newRooms);
+      setAlerts(generateAlerts(newRooms));
+      setRecommendations(generateRecommendations(newRooms));
+      setSummaryCards(getSummaryCards());
+      setChartData(generateChartData());
+      setLastUpdated(new Date());
     }, intervalMs);
 
     return () => clearInterval(timer);
-  }, [settings.autoRefreshEnabled, settings.refreshInterval, refreshData]);
+  }, [settings.autoRefreshEnabled, settings.refreshInterval]);
 
   const markAllAlertsRead = useCallback(() => {
     setAlerts((prev) => prev.map((a) => ({ ...a, isRead: true })));
@@ -136,6 +149,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         settings,
         searchQuery,
         lastUpdated,
+        isRefreshing,
         setSearchQuery,
         updateSettings,
         refreshData,

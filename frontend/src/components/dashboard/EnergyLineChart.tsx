@@ -1,6 +1,7 @@
 // Daily Energy Usage — Line Chart
 // Displays actual vs predicted energy usage over 24 hours
 
+import { memo } from "react";
 import {
   LineChart,
   Line,
@@ -17,7 +18,7 @@ interface EnergyLineChartProps {
   data: EnergyDataPoint[];
 }
 
-export function EnergyLineChart({ data }: EnergyLineChartProps) {
+export const EnergyLineChart = memo(function EnergyLineChart({ data }: EnergyLineChartProps) {
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
       <div className="mb-4">
@@ -88,4 +89,4 @@ export function EnergyLineChart({ data }: EnergyLineChartProps) {
       </div>
     </div>
   );
-}
+});

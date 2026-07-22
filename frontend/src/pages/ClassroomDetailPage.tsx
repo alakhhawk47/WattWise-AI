@@ -1,7 +1,7 @@
-// Classroom Detail Page — Phase 3
-// Comprehensive individual classroom overview with real-time metrics, interactive device toggles, power diff, and trend chart
+// Classroom Detail Page — Phase 3 + Phase 4 Polish
+// Comprehensive individual classroom overview with real-time metrics, interactive device toggles, power diff, trend chart, and last updated timestamp
 
-import { useParams, useNavigate } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   School,
@@ -13,6 +13,7 @@ import {
   Fan,
   AlertTriangle,
   Brain,
+  Clock,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -30,14 +31,14 @@ import { cn } from "@/lib/utils";
 export function ClassroomDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getClassroomById, toggleDevice, alerts, recommendations } = useApp();
+  const { getClassroomById, toggleDevice, alerts, recommendations, lastUpdated } = useApp();
 
   const classroom = getClassroomById(id || "");
   const roomTrendData = generateDailyEnergyData();
 
   if (!classroom) {
     return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center space-y-4">
+      <div className="flex min-h-[50vh] flex-col items-center justify-center space-y-4 animate-fade-in">
         <School className="h-12 w-12 text-muted-foreground/40" />
         <h2 className="text-xl font-bold text-foreground">Classroom Not Found</h2>
         <p className="text-sm text-muted-foreground">
@@ -59,7 +60,7 @@ export function ClassroomDetailPage() {
   const roomRecs = recommendations.filter((r) => r.message.includes(classroom.name));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Top Bar with Back Button */}
       <div className="flex items-center justify-between">
         <button
@@ -325,6 +326,14 @@ export function ClassroomDetailPage() {
             <p className="text-xs text-muted-foreground py-4 text-center">No active alerts for this room.</p>
           )}
         </div>
+      </div>
+
+      {/* Last Updated Footer */}
+      <div className="flex items-center justify-center gap-2 pt-2 pb-4 text-xs text-muted-foreground">
+        <Clock className="h-3.5 w-3.5" />
+        <span>
+          Last updated: {lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })} — {lastUpdated.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+        </span>
       </div>
     </div>
   );
