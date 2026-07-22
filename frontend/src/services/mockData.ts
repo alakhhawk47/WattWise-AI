@@ -1,5 +1,5 @@
-// Mock data service for WattWise AI Dashboard
-// Generates realistic simulated data for classroom monitoring
+// Mock data service for WattWise AI
+// Generates realistic simulated data for classrooms, analytics, reports, recommendations, and alerts
 
 import type {
   Classroom,
@@ -11,6 +11,7 @@ import type {
   PowerDistributionPoint,
   ConsumptionBreakdownPoint,
   ChartData,
+  ReportItem,
 } from "@/types";
 
 // --- Helpers ---
@@ -68,56 +69,101 @@ export function generateClassrooms(): Classroom[] {
   });
 }
 
-// --- Alerts ---
+// --- Realistic Alerts Generator ---
 
-const ALERT_MESSAGES: { message: string; severity: Alert["severity"] }[] = [
-  { message: "High Power Usage", severity: "critical" },
-  { message: "Low Occupancy — Devices Still On", severity: "warning" },
-  { message: "Lights Still ON After Hours", severity: "warning" },
-  { message: "Temperature Above Threshold", severity: "critical" },
-  { message: "Unusual Energy Spike Detected", severity: "critical" },
-  { message: "HVAC Running in Empty Room", severity: "warning" },
-  { message: "Optimal Energy Usage", severity: "info" },
-  { message: "Fan Speed Abnormally High", severity: "warning" },
-];
-
-export function generateAlerts(): Alert[] {
-  const count = randomInt(4, 7);
+export function generateAlerts(classrooms: Classroom[] = generateClassrooms()): Alert[] {
+  const alerts: Alert[] = [];
   const now = Date.now();
 
-  return Array.from({ length: count }, (_, i) => {
-    const template = pickRandom(ALERT_MESSAGES);
-    return {
-      id: `alert-${i}-${now}`,
-      roomName: pickRandom(ROOM_NAMES),
-      message: template.message,
-      severity: template.severity,
-      timestamp: new Date(now - randomInt(1, 60) * 60 * 1000),
-    };
-  }).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  classrooms.forEach((room, index) => {
+    if (room.status === "high-usage") {
+      alerts.push({
+        id: `alert-high-${room.id}-${now}`,
+        roomName: room.name,
+        message: `High Power Usage detected (${room.currentPower} kW vs ${room.expectedPower} kW expected)`,
+        severity: "critical",
+        timestamp: new Date(now - (index + 1) * 3 * 60 * 1000),
+        isRead: false,
+      });
+    } else if (room.status === "warning") {
+      if (room.occupancy < 5 && room.lightsOn) {
+        alerts.push({
+          id: `alert-empty-${room.id}-${now}`,
+          roomName: room.name,
+          message: `Lights Left ON with low occupancy (${room.occupancy} students)`,
+          severity: "warning",
+          timestamp: new Date(now - (index + 2) * 5 * 60 * 1000),
+          isRead: false,
+        });
+      } else if (room.temperature > 28) {
+        alerts.push({
+          id: `alert-temp-${room.id}-${now}`,
+          roomName: room.name,
+          message: `Temperature High (${room.temperature}°C) — HVAC overworking`,
+          severity: "warning",
+          timestamp: new Date(now - (index + 1) * 8 * 60 * 1000),
+          isRead: false,
+        });
+      }
+    } else if (index % 4 === 0) {
+      alerts.push({
+        id: `alert-info-${room.id}-${now}`,
+        roomName: room.name,
+        message: `Normal operating efficiency restored`,
+        severity: "info",
+        timestamp: new Date(now - (index + 1) * 12 * 60 * 1000),
+        isRead: true,
+      });
+    }
+  });
+
+  return alerts.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 8);
 }
 
-// --- Recommendations ---
+// --- Dynamic AI Recommendations ---
 
-const RECOMMENDATION_POOL: { message: string; type: Recommendation["type"] }[] = [
-  { message: "Energy usage is higher than expected in Room 103. Consider reducing HVAC intensity.", type: "optimization" },
-  { message: "Reduce lighting after classroom hours to save up to 15% energy.", type: "optimization" },
-  { message: "Room 115 is operating efficiently. Keep current settings.", type: "positive" },
-  { message: "Room 108 has had 3 alerts in the last hour. Investigate power supply.", type: "alert" },
-  { message: "Switching to LED in Room 204 could cut lighting energy by 40%.", type: "optimization" },
-  { message: "Room 112 fans are running at full speed with low occupancy.", type: "alert" },
-  { message: "Room 119 achieved the best energy score this week. Great job!", type: "positive" },
-  { message: "Consider scheduling HVAC shutdown during weekends for Rooms 101–105.", type: "optimization" },
-];
+export function generateRecommendations(classrooms: Classroom[] = generateClassrooms()): Recommendation[] {
+  const recs: Recommendation[] = [];
 
-export function generateRecommendations(): Recommendation[] {
-  // Pick 4–5 unique recommendations
-  const shuffled = [...RECOMMENDATION_POOL].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, randomInt(4, 5)).map((r, i) => ({
-    id: `rec-${i}`,
-    message: r.message,
-    type: r.type,
-  }));
+  classrooms.forEach((room) => {
+    if (room.currentPower > room.expectedPower * 1.3 && room.occupancy < 10) {
+      recs.push({
+        id: `rec-high-low-${room.id}`,
+        message: `High power with low occupancy in ${room.name}. Turn off unused lights & fans.`,
+        type: "alert",
+      });
+    } else if (room.temperature > 28) {
+      recs.push({
+        id: `rec-hvac-${room.id}`,
+        message: `High temperature (${room.temperature}°C) in ${room.name}. Reduce HVAC runtime.`,
+        type: "optimization",
+      });
+    } else if (room.status === "normal" && room.riskScore < 25) {
+      recs.push({
+        id: `rec-normal-${room.id}`,
+        message: `${room.name} is operating efficiently (${room.currentPower} kW).`,
+        type: "positive",
+      });
+    }
+  });
+
+  // Ensure fallback options if dynamic ones are few
+  if (recs.length < 4) {
+    recs.push(
+      {
+        id: "rec-gen-1",
+        message: "Reduce overall lighting after classroom hours to save up to 15% energy.",
+        type: "optimization",
+      },
+      {
+        id: "rec-gen-2",
+        message: "Room 101 achieved top energy efficiency score today.",
+        type: "positive",
+      }
+    );
+  }
+
+  return recs.slice(0, 5);
 }
 
 // --- Summary Cards ---
@@ -134,7 +180,7 @@ export function getSummaryCards(): SummaryCardData[] {
       value: `${totalEnergy} kWh`,
       change: `+${randomInt(2, 8)}%`,
       changeLabel: "vs yesterday",
-      changeType: "negative" as const,
+      changeType: "negative",
       icon: "Zap",
       color: "emerald",
     },
@@ -143,7 +189,7 @@ export function getSummaryCards(): SummaryCardData[] {
       value: `${carbonSaved} kg`,
       change: `+${randomInt(8, 18)}%`,
       changeLabel: "this week",
-      changeType: "positive" as const,
+      changeType: "positive",
       icon: "Leaf",
       color: "green",
     },
@@ -152,7 +198,7 @@ export function getSummaryCards(): SummaryCardData[] {
       value: String(activeAlerts),
       change: activeAlerts > 3 ? "High Priority" : "Moderate",
       changeLabel: "",
-      changeType: activeAlerts > 3 ? "negative" as const : "neutral" as const,
+      changeType: activeAlerts > 3 ? "negative" : "neutral",
       icon: "AlertTriangle",
       color: "amber",
     },
@@ -161,7 +207,7 @@ export function getSummaryCards(): SummaryCardData[] {
       value: `${aiHealth}%`,
       change: aiHealth >= 90 ? "Excellent" : "Good",
       changeLabel: "",
-      changeType: "positive" as const,
+      changeType: "positive",
       icon: "Brain",
       color: "violet",
     },
@@ -173,7 +219,6 @@ export function getSummaryCards(): SummaryCardData[] {
 export function generateDailyEnergyData(): EnergyDataPoint[] {
   return Array.from({ length: 24 }, (_, i) => {
     const hour = `${String(i).padStart(2, "0")}:00`;
-    // Simulate realistic campus pattern: low at night, peak during day
     const base = i >= 8 && i <= 17 ? randomBetween(3, 6) : randomBetween(0.5, 2);
     const predicted = i >= 8 && i <= 17 ? randomBetween(2.8, 5.5) : randomBetween(0.4, 1.8);
     return { hour, actual: base, predicted };
@@ -212,4 +257,83 @@ export function generateChartData(): ChartData {
     powerDistribution: generatePowerDistribution(),
     consumptionBreakdown: generateConsumptionBreakdown(),
   };
+}
+
+// --- Analytics Data Generator ---
+
+export function generateAnalyticsData() {
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const weeklyData = days.map((day) => ({
+    day,
+    actual: randomBetween(120, 240),
+    target: randomBetween(110, 200),
+  }));
+
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthlyData = months.map((month) => ({
+    month,
+    consumption: randomBetween(3200, 4800),
+    saved: randomBetween(400, 900),
+  }));
+
+  const riskDistribution = [
+    { name: "Normal (Low)", value: randomInt(11, 15), fill: "hsl(142, 55%, 42%)" },
+    { name: "Warning (Med)", value: randomInt(3, 6), fill: "hsl(45, 90%, 55%)" },
+    { name: "High Risk", value: randomInt(1, 4), fill: "hsl(0, 84%, 60%)" },
+  ];
+
+  const wasteBreakdown = [
+    { category: "After-hours Lighting", value: randomBetween(35, 65) },
+    { category: "Empty Room HVAC", value: randomBetween(50, 90) },
+    { category: "Unused Fan Speed", value: randomBetween(20, 45) },
+    { category: "Standby Equipment", value: randomBetween(15, 30) },
+  ];
+
+  return {
+    weeklyData,
+    monthlyData,
+    riskDistribution,
+    wasteBreakdown,
+    carbonSavedTotal: 148.5,
+    avgOccupancy: 28,
+  };
+}
+
+// --- Reports Generator ---
+
+export function getReportsList(): ReportItem[] {
+  return [
+    {
+      id: "rep-001",
+      title: "Weekly Energy Consumption Report",
+      description: "Detailed breakdown of weekly energy usage, peak hours, and classroom usage trends.",
+      generatedDate: "July 21, 2026",
+      category: "Weekly",
+      fileSize: "2.4 MB",
+    },
+    {
+      id: "rep-002",
+      title: "Monthly Sustainability & Carbon Summary",
+      description: "Comprehensive monthly report on carbon offset, efficiency gains, and eco impact.",
+      generatedDate: "July 01, 2026",
+      category: "Monthly",
+      fileSize: "4.8 MB",
+    },
+    {
+      id: "rep-003",
+      title: "Campus Carbon Footprint Assessment",
+      description: "Detailed analysis of CO₂ emissions avoided across Block A–D classrooms.",
+      generatedDate: "June 15, 2026",
+      category: "Carbon",
+      fileSize: "3.1 MB",
+    },
+    {
+      id: "rep-004",
+      title: "Automated Energy Audit & Anomaly Log",
+      description: "Full audit trail of detected anomalies, high usage alerts, and resolution times.",
+      generatedDate: "May 31, 2026",
+      category: "Audit",
+      fileSize: "1.9 MB",
+    },
+  ];
 }

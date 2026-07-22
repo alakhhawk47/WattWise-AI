@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { AppProvider } from "@/context/AppContext";
+import { ToastProvider } from "@/components/ui/Toast";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { LandingPage } from "@/pages/LandingPage";
@@ -15,27 +17,31 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
+        <AppProvider>
+          <ToastProvider>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<LoginPage />} />
 
-          {/* Protected routes with app layout */}
-          <Route
-            element={
-              <ProtectedRoute>
-                <AppLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/analytics" element={<AnalyticsPage />} />
-            <Route path="/classrooms" element={<ClassroomsPage />} />
-            <Route path="/classrooms/:id" element={<ClassroomDetailPage />} />
-            <Route path="/reports" element={<ReportsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-          </Route>
-        </Routes>
+              {/* Protected routes with app layout */}
+              <Route
+                element={
+                  <ProtectedRoute>
+                    <AppLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/analytics" element={<AnalyticsPage />} />
+                <Route path="/classrooms" element={<ClassroomsPage />} />
+                <Route path="/classrooms/:id" element={<ClassroomDetailPage />} />
+                <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+              </Route>
+            </Routes>
+          </ToastProvider>
+        </AppProvider>
       </AuthProvider>
     </BrowserRouter>
   );

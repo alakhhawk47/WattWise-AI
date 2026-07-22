@@ -37,6 +37,7 @@ export interface Alert {
   message: string;
   severity: "info" | "warning" | "critical";
   timestamp: Date;
+  isRead?: boolean;
 }
 
 export interface Recommendation {
@@ -78,3 +79,20 @@ export interface ChartData {
   powerDistribution: PowerDistributionPoint[];
   consumptionBreakdown: ConsumptionBreakdownPoint[];
 }
+
+export interface ReportItem {
+  id: string;
+  title: string;
+  description: string;
+  generatedDate: string;
+  category: "Weekly" | "Monthly" | "Carbon" | "Audit";
+  fileSize: string;
+}
+
+export interface AppSettings {
+  notificationsEnabled: boolean;
+  autoRefreshEnabled: boolean;
+  refreshInterval: number; // in seconds
+  devMode: boolean;
+}
+
