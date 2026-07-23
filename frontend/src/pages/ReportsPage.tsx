@@ -1,10 +1,11 @@
 // Reports Page — Phase 3 + Phase 5 Final Polish
 // Campus energy report generation with real downloadable PDF files via jspdf, card-hover elevation, and toasts
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FileText, Download, Calendar, HardDrive, CheckCircle, Loader2 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { getReportsList } from "@/services/mockData";
+import { reportService } from "@/services/reportService";
 import { useToast } from "@/components/ui/Toast";
 import type { ReportItem } from "@/types";
 
@@ -129,9 +130,22 @@ function generateReportPDF(report: ReportItem) {
 }
 
 export function ReportsPage() {
-  const reports = getReportsList();
+  const [reports, setReports] = useState<ReportItem[]>(() => getReportsList());
   const { showToast } = useToast();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    reportService
+      .getReports()
+      .then((data) => {
+        if (data && data.length > 0) {
+          setReports(data);
+        }
+      })
+      .catch((err) => {
+        console.warn("⚠️ Database reports fetch notice:", err);
+      });
+  }, []);
 
   const handleDownload = (report: ReportItem) => {
     setDownloadingId(report.id);

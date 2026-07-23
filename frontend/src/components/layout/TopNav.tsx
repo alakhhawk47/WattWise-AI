@@ -47,7 +47,7 @@ const SEVERITY_BADGES: Record<string, string> = {
 };
 
 export function TopNav({ onMenuToggle }: TopNavProps) {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { classrooms, alerts, searchQuery, setSearchQuery, markAllAlertsRead, clearAllAlerts } = useApp();
   const navigate = useNavigate();
@@ -59,8 +59,9 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
 
   const unreadCount = alerts.filter((a) => !a.isRead).length;
 
-  const userName = user?.user_metadata?.full_name || user?.email || "User";
-  const avatarUrl = user?.user_metadata?.avatar_url;
+  const userName = profile?.full_name || user?.user_metadata?.full_name || user?.email || "User";
+  const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url || undefined;
+  const userEmail = profile?.email || user?.email || "";
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -323,7 +324,7 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
         <div className="mx-1 h-6 w-px bg-border" />
 
         {/* User avatar & sign out */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" title={userEmail}>
           {avatarUrl ? (
             <img
               src={avatarUrl}

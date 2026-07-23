@@ -1,0 +1,17 @@
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.production.local
+.env.test.local
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+*.egg-info/
+.pytest_cache/

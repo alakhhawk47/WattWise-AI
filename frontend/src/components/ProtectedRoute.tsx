@@ -1,5 +1,5 @@
 import { Navigate } from "react-router-dom";
-import { useAuth, IS_DEV_AUTH_BYPASS } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
@@ -9,10 +9,8 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
 
-  if (IS_DEV_AUTH_BYPASS) {
-    return <>{children}</>;
-  }
-
+  // Show a full-screen loader while restoring the session.
+  // This prevents the landing page from flashing before auth state is known.
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -24,10 +22,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
+  // Not authenticated → redirect to landing page
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
 }
-

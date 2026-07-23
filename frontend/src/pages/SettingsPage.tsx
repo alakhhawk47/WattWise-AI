@@ -1,6 +1,7 @@
 // Settings Page — Phase 3 + Phase 5 Final Polish
 // Full application settings persisted in localStorage with theme controls, auto refresh rate, dev mode, toast feedback, and about section
 
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Settings,
@@ -16,6 +17,8 @@ import {
   Layers,
   Server,
   Gauge,
+  User as UserIcon,
+  Save,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,10 +28,49 @@ import { cn } from "@/lib/utils";
 
 export function SettingsPage() {
   const { theme, toggleTheme } = useTheme();
-  const { signOut } = useAuth();
+  const { user, profile, updateProfileState, signOut } = useAuth();
   const { settings, updateSettings } = useApp();
   const { showToast } = useToast();
   const navigate = useNavigate();
+
+  const [fullName, setFullName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.full_name || "");
+      setAvatarUrl(profile.avatar_url || "");
+    } else if (user) {
+      setFullName((user.user_metadata?.full_name as string) || (user.user_metadata?.name as string) || "");
+      setAvatarUrl((user.user_metadata?.avatar_url as string) || (user.user_metadata?.picture as string) || "");
+    }
+  }, [profile, user]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingProfile(true);
+    try {
+      await updateProfileState({
+        full_name: fullName,
+        avatar_url: avatarUrl,
+      });
+      showToast({
+        title: "Profile Updated",
+        message: "Your user profile has been saved successfully to Supabase.",
+        type: "success",
+      });
+    } catch (err) {
+      console.error(err);
+      showToast({
+        title: "Update Failed",
+        message: err instanceof Error ? err.message : "Failed to update profile in database.",
+        type: "error",
+      });
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   const handleToggleTheme = () => {
     toggleTheme();
@@ -68,6 +110,62 @@ export function SettingsPage() {
 
       {/* Settings Sections */}
       <div className="space-y-4">
+        {/* User Profile Section */}
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-4 card-hover">
+          <div className="flex items-center gap-2 pb-2 border-b border-border">
+            <UserIcon className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">User Profile</h3>
+          </div>
+
+          <form onSubmit={handleSaveProfile} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Display Name */}
+              <div className="space-y-1.5">
+                <label htmlFor="fullNameInput" className="text-xs font-medium text-foreground">
+                  Display Name
+                </label>
+                <input
+                  id="fullNameInput"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Your full name"
+                  className="w-full rounded-lg border border-input bg-muted/50 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              {/* Profile Photo URL */}
+              <div className="space-y-1.5">
+                <label htmlFor="avatarUrlInput" className="text-xs font-medium text-foreground">
+                  Profile Photo URL
+                </label>
+                <input
+                  id="avatarUrlInput"
+                  type="text"
+                  value={avatarUrl}
+                  onChange={(e) => setAvatarUrl(e.target.value)}
+                  placeholder="https://example.com/avatar.jpg"
+                  className="w-full rounded-lg border border-input bg-muted/50 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-border/50">
+              <p className="text-[11px] text-muted-foreground">
+                Email: <span className="font-mono text-foreground">{profile?.email || user?.email || "N/A"}</span>
+              </p>
+              <button
+                type="submit"
+                disabled={isSavingProfile}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <Save className="h-3.5 w-3.5" />
+                {isSavingProfile ? "Saving..." : "Save Profile"}
+              </button>
+            </div>
+          </form>
+        </div>
+
         {/* Appearance & Theme */}
         <div className="rounded-2xl border border-border bg-card p-6 space-y-4 card-hover">
           <div className="flex items-center gap-2 pb-2 border-b border-border">

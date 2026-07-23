@@ -1,5 +1,5 @@
 // Global Application Context for WattWise AI
-// Manages shared mock data, settings, notifications, search, and device toggles
+// Manages database entities, telemetry state, settings, notifications, and search
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import type { Classroom, Alert, Recommendation, SummaryCardData, ChartData, AppSettings } from "@/types";
@@ -10,6 +10,9 @@ import {
   getSummaryCards,
   generateChartData,
 } from "@/services/mockData";
+import { classroomService } from "@/services/classroomService";
+import { alertService } from "@/services/alertService";
+import { recommendationService } from "@/services/recommendationService";
 
 const DEFAULT_SETTINGS: AppSettings = {
   notificationsEnabled: true,
@@ -63,6 +66,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return DEFAULT_SETTINGS;
   });
 
+  // Async loader to fetch database records from Supabase services
+  const loadDatabaseData = useCallback(async () => {
+    try {
+      const rooms = await classroomService.getClassrooms();
+      setClassrooms(rooms);
+
+      const dbAlerts = await alertService.getAlerts(rooms);
+      setAlerts(dbAlerts);
+
+      const dbRecs = await recommendationService.getRecommendations(rooms);
+      setRecommendations(dbRecs);
+
+      setSummaryCards(getSummaryCards());
+      setChartData(generateChartData());
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.warn("⚠️ Database state load exception:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDatabaseData();
+  }, [loadDatabaseData]);
+
   const updateSettings = useCallback((newSettings: Partial<AppSettings>) => {
     setSettings((prev) => {
       const updated = { ...prev, ...newSettings };
@@ -73,36 +100,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const refreshData = useCallback(() => {
     setIsRefreshing(true);
-    // Small delay to show spinner for visual feedback
-    setTimeout(() => {
-      const newRooms = generateClassrooms();
-      setClassrooms(newRooms);
-      setAlerts(generateAlerts(newRooms));
-      setRecommendations(generateRecommendations(newRooms));
-      setSummaryCards(getSummaryCards());
-      setChartData(generateChartData());
-      setLastUpdated(new Date());
+    loadDatabaseData().finally(() => {
       setIsRefreshing(false);
-    }, 500);
-  }, []);
+    });
+  }, [loadDatabaseData]);
 
-  // Auto-refresh timer based on settings
+  // Auto-refresh timer for live telemetry overlay based on settings
   useEffect(() => {
     if (!settings.autoRefreshEnabled) return;
 
     const intervalMs = settings.refreshInterval * 1000;
     const timer = setInterval(() => {
-      const newRooms = generateClassrooms();
-      setClassrooms(newRooms);
-      setAlerts(generateAlerts(newRooms));
-      setRecommendations(generateRecommendations(newRooms));
-      setSummaryCards(getSummaryCards());
-      setChartData(generateChartData());
-      setLastUpdated(new Date());
+      loadDatabaseData();
     }, intervalMs);
 
     return () => clearInterval(timer);
-  }, [settings.autoRefreshEnabled, settings.refreshInterval]);
+  }, [settings.autoRefreshEnabled, settings.refreshInterval, loadDatabaseData]);
 
   const markAllAlertsRead = useCallback(() => {
     setAlerts((prev) => prev.map((a) => ({ ...a, isRead: true })));

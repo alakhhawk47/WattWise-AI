@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Zap,
   Activity,
@@ -9,6 +10,7 @@ import {
   Leaf,
   ExternalLink,
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const features = [
   {
@@ -38,6 +40,16 @@ const features = [
 ];
 
 export function LandingPage() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect authenticated users straight to the dashboard
+  useEffect(() => {
+    if (!loading && user) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, loading, navigate]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}

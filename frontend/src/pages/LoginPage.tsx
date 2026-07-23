@@ -1,28 +1,42 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Zap } from "lucide-react";
-import { useAuth, IS_DEV_AUTH_BYPASS } from "@/hooks/useAuth";
+import { useAuth, friendlyAuthError } from "@/hooks/useAuth";
+import { useToast } from "@/components/ui/Toast";
 
 export function LoginPage() {
   const { user, loading, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  const [signingIn, setSigningIn] = useState(false);
 
+  // If user is already authenticated, redirect to dashboard
   useEffect(() => {
-    if (IS_DEV_AUTH_BYPASS || (!loading && user)) {
+    if (!loading && user) {
       navigate("/dashboard", { replace: true });
     }
   }, [user, loading, navigate]);
 
   const handleGoogleLogin = useCallback(async () => {
+    setSigningIn(true);
     try {
       await signInWithGoogle();
-      if (IS_DEV_AUTH_BYPASS) {
-        navigate("/dashboard", { replace: true });
-      }
+      // OAuth redirect will navigate away from this page.
+      // If we're still here (e.g. popup mode), the onAuthStateChange
+      // listener in AuthProvider will update user → the useEffect above
+      // will redirect to /dashboard.
     } catch (error) {
-      console.error("Login failed:", error);
+      const message = friendlyAuthError(error as Error);
+      showToast({
+        title: "Authentication Error",
+        message,
+        type: "error",
+        duration: 5000,
+      });
+    } finally {
+      setSigningIn(false);
     }
-  }, [signInWithGoogle, navigate]);
+  }, [signInWithGoogle, showToast]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-watt-green-950/30 via-background to-background px-4">
@@ -49,7 +63,7 @@ export function LoginPage() {
           {/* Google Sign In Button */}
           <button
             onClick={handleGoogleLogin}
-            disabled={loading}
+            disabled={loading || signingIn}
             className="flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-sm hover:bg-muted transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -70,7 +84,7 @@ export function LoginPage() {
                 fill="#EA4335"
               />
             </svg>
-            {loading ? "Loading..." : "Continue with Google"}
+            {loading || signingIn ? "Signing in..." : "Continue with Google"}
           </button>
 
           {/* Divider */}
