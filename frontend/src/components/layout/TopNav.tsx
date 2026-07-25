@@ -59,8 +59,15 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
 
   const unreadCount = alerts.filter((a) => !a.isRead).length;
 
+  const googleAvatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || undefined;
+  const storageAvatar = profile?.avatar_url;
+  const [imgSrc, setImgSrc] = useState<string | undefined>(storageAvatar || googleAvatar);
+
+  useEffect(() => {
+    setImgSrc(profile?.avatar_url || googleAvatar);
+  }, [profile?.avatar_url, googleAvatar]);
+
   const userName = profile?.full_name || user?.user_metadata?.full_name || user?.email || "User";
-  const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url || undefined;
   const userEmail = profile?.email || user?.email || "";
 
   const handleSignOut = useCallback(async () => {
@@ -325,12 +332,20 @@ export function TopNav({ onMenuToggle }: TopNavProps) {
 
         {/* User avatar & sign out */}
         <div className="flex items-center gap-2" title={userEmail}>
-          {avatarUrl ? (
+          {imgSrc ? (
             <img
-              src={avatarUrl}
+              src={imgSrc}
               alt={userName}
               className="h-8 w-8 rounded-full border border-border object-cover"
               referrerPolicy="no-referrer"
+              onError={() => {
+                // If Supabase Storage image fails, fall back to Google avatar
+                if (imgSrc !== googleAvatar && googleAvatar) {
+                  setImgSrc(googleAvatar);
+                } else {
+                  setImgSrc(undefined);
+                }
+              }}
             />
           ) : (
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">

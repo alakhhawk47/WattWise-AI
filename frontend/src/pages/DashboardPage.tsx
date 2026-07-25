@@ -1,7 +1,7 @@
 // Dashboard Page — Phase 2A + Phase 5 Final Polish
 // Full SaaS-style energy monitoring dashboard with live data, interactive cards, modals, refresh UX, and skeleton loading
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LayoutDashboard, RefreshCw } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -36,6 +36,15 @@ export function DashboardPage() {
   const navigate = useNavigate();
 
   const [showAIHealthModal, setShowAIHealthModal] = useState(false);
+  const [secondsAgo, setSecondsAgo] = useState(0);
+
+  useEffect(() => {
+    setSecondsAgo(0);
+    const timer = setInterval(() => {
+      setSecondsAgo((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lastUpdated]);
 
   const handleRefresh = () => {
     refresh();
@@ -89,8 +98,8 @@ export function DashboardPage() {
                   <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
                 </span>
                 <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">LIVE</span>
-                <span className="text-xs text-muted-foreground">
-                  · Updating every {settings.refreshInterval}s
+                <span className="text-xs text-muted-foreground font-mono">
+                  · {isRefreshing || secondsAgo === 0 ? "Updating..." : `Last update: ${secondsAgo}s ago`}
                 </span>
               </>
             ) : (

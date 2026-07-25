@@ -20,6 +20,9 @@ export type ClassroomStatus = "normal" | "warning" | "high-usage";
 export interface Classroom {
   id: string;
   name: string;
+  building?: string;
+  floor?: number;
+  capacity?: number;
   occupancy: number;
   temperature: number;
   humidity: number;
@@ -94,6 +97,7 @@ export interface ReportItem {
   generatedDate: string;
   category: "Weekly" | "Monthly" | "Carbon" | "Audit";
   fileSize: string;
+  downloadUrl?: string | null;
 }
 
 export interface AppSettings {

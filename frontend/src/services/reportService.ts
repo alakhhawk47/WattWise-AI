@@ -38,6 +38,7 @@ export const reportService = {
           generatedDate: genDate,
           category: row.report_type,
           fileSize: "2.5 MB",
+          downloadUrl: row.download_url,
         };
       });
     } catch (err) {

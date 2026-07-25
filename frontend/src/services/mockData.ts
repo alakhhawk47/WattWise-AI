@@ -197,19 +197,19 @@ export function generateRecommendations(classrooms: Classroom[] = generateClassr
   return recs.slice(0, 5);
 }
 
+import { telemetrySimulator } from "@/services/telemetrySimulator";
+
 // --- Summary Cards ---
 
-export function getSummaryCards(): SummaryCardData[] {
-  const totalEnergy = randomBetween(42, 56);
-  const carbonSaved = randomBetween(4.5, 7.2);
-  const activeAlerts = randomInt(1, 6);
-  const aiHealth = randomInt(88, 98);
+export function getSummaryCards(activeAlertsCountOverride?: number): SummaryCardData[] {
+  const metrics = telemetrySimulator.getSummaryMetrics();
+  const activeAlerts = activeAlertsCountOverride !== undefined ? activeAlertsCountOverride : metrics.activeAlertsCount;
 
   return [
     {
       title: "Today's Energy",
-      value: `${totalEnergy} kWh`,
-      change: `+${randomInt(2, 8)}%`,
+      value: `${metrics.todayEnergy} kWh`,
+      change: `+4.2%`,
       changeLabel: "vs yesterday",
       changeType: "negative",
       icon: "Zap",
@@ -217,8 +217,8 @@ export function getSummaryCards(): SummaryCardData[] {
     },
     {
       title: "Carbon Saved",
-      value: `${carbonSaved} kg`,
-      change: `+${randomInt(8, 18)}%`,
+      value: `${metrics.carbonSaved} kg`,
+      change: `+12%`,
       changeLabel: "this week",
       changeType: "positive",
       icon: "Leaf",
@@ -235,8 +235,8 @@ export function getSummaryCards(): SummaryCardData[] {
     },
     {
       title: "AI Health Score",
-      value: `${aiHealth}%`,
-      change: aiHealth >= 90 ? "Excellent" : "Good",
+      value: `${metrics.aiHealthScore}%`,
+      change: metrics.aiHealthScore >= 90 ? "Excellent" : "Good",
       changeLabel: "",
       changeType: "positive",
       icon: "Brain",
@@ -248,46 +248,19 @@ export function getSummaryCards(): SummaryCardData[] {
 // --- Chart Data ---
 
 export function generateDailyEnergyData(): EnergyDataPoint[] {
-  return Array.from({ length: 24 }, (_, i) => {
-    const hour = `${String(i).padStart(2, "0")}:00`;
-    const base = i >= 8 && i <= 17 ? randomBetween(3, 6) : randomBetween(0.5, 2);
-    const predicted = i >= 8 && i <= 17 ? randomBetween(2.8, 5.5) : randomBetween(0.4, 1.8);
-    return { hour, actual: base, predicted };
-  });
+  return telemetrySimulator.getChartTelemetry().dailyEnergy;
 }
 
 export function generatePowerDistribution(): PowerDistributionPoint[] {
-  const zones = [
-    { zone: "Block A", fill: "hsl(142, 55%, 42%)" },
-    { zone: "Block B", fill: "hsl(80, 75%, 50%)" },
-    { zone: "Block C", fill: "hsl(200, 70%, 50%)" },
-    { zone: "Block D", fill: "hsl(280, 60%, 55%)" },
-    { zone: "Labs", fill: "hsl(30, 80%, 55%)" },
-    { zone: "Library", fill: "hsl(350, 65%, 55%)" },
-  ];
-
-  return zones.map((z) => ({
-    ...z,
-    power: randomBetween(5, 18),
-  }));
+  return telemetrySimulator.getChartTelemetry().powerDistribution;
 }
 
 export function generateConsumptionBreakdown(): ConsumptionBreakdownPoint[] {
-  return [
-    { name: "Lighting", value: randomBetween(20, 35), fill: "hsl(45, 90%, 55%)" },
-    { name: "HVAC", value: randomBetween(25, 40), fill: "hsl(200, 70%, 50%)" },
-    { name: "Equipment", value: randomBetween(15, 25), fill: "hsl(280, 60%, 55%)" },
-    { name: "Fans", value: randomBetween(10, 20), fill: "hsl(142, 55%, 42%)" },
-    { name: "Other", value: randomBetween(5, 12), fill: "hsl(0, 0%, 55%)" },
-  ];
+  return telemetrySimulator.getChartTelemetry().consumptionBreakdown;
 }
 
 export function generateChartData(): ChartData {
-  return {
-    dailyEnergy: generateDailyEnergyData(),
-    powerDistribution: generatePowerDistribution(),
-    consumptionBreakdown: generateConsumptionBreakdown(),
-  };
+  return telemetrySimulator.getChartTelemetry();
 }
 
 // --- Analytics Data Generator ---

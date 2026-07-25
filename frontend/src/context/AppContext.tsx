@@ -1,5 +1,5 @@
 // Global Application Context for WattWise AI
-// Manages database entities, telemetry state, settings, notifications, and search
+// Manages database entities (Supabase), live telemetry (telemetrySimulator), settings, and user interactions
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import type { Classroom, Alert, Recommendation, SummaryCardData, ChartData, AppSettings } from "@/types";
@@ -13,6 +13,7 @@ import {
 import { classroomService } from "@/services/classroomService";
 import { alertService } from "@/services/alertService";
 import { recommendationService } from "@/services/recommendationService";
+import { telemetrySimulator } from "@/services/telemetrySimulator";
 
 const DEFAULT_SETTINGS: AppSettings = {
   notificationsEnabled: true,
@@ -66,7 +67,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return DEFAULT_SETTINGS;
   });
 
-  // Async loader to fetch database records from Supabase services
+  // Async loader: Load persistent metadata from Supabase database combined with telemetry engine
   const loadDatabaseData = useCallback(async () => {
     try {
       const rooms = await classroomService.getClassrooms();
@@ -78,7 +79,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const dbRecs = await recommendationService.getRecommendations(rooms);
       setRecommendations(dbRecs);
 
-      setSummaryCards(getSummaryCards());
+      setSummaryCards(getSummaryCards(dbAlerts.filter((a) => !a.isRead).length));
       setChartData(generateChartData());
       setLastUpdated(new Date());
     } catch (err) {
@@ -90,6 +91,116 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadDatabaseData();
   }, [loadDatabaseData]);
 
+  // Helper to derive classroom status based on live telemetry metrics
+  const deriveRoomStatus = (currentPower: number, expectedPower: number, riskScore: number): "normal" | "warning" | "high-usage" => {
+    if (riskScore > 70 || currentPower > expectedPower * 1.35) return "high-usage";
+    if (riskScore > 40 || currentPower > expectedPower * 1.12) return "warning";
+    return "normal";
+  };
+
+  // Step telemetry ONLY — Regenerates telemetry values without touching or overwriting database records
+  const stepTelemetryData = useCallback(() => {
+    telemetrySimulator.stepTelemetry(classrooms);
+    const updatedTelemetryMap = telemetrySimulator.getAllTelemetry(classrooms);
+    const now = new Date();
+
+    let updatedRoomsList: Classroom[] = [];
+
+    setClassrooms((prevRooms) => {
+      updatedRoomsList = prevRooms.map((room) => {
+        const live = updatedTelemetryMap.get(room.id);
+        if (!live) return room;
+
+        const nextStatus = deriveRoomStatus(live.currentPower, room.expectedPower, live.riskScore);
+
+        return {
+          ...room,
+          occupancy: live.occupancy,
+          temperature: live.temperature,
+          humidity: live.humidity,
+          currentPower: live.currentPower,
+          riskScore: live.riskScore,
+          status: nextStatus,
+        };
+      });
+      return updatedRoomsList;
+    });
+
+    // Dynamic realtime alerts generation & resolution (Requirements 5 & 6)
+    setAlerts((prevAlerts) => {
+      const newAlerts: Alert[] = [];
+
+      updatedRoomsList.forEach((room) => {
+        const activeAlert = prevAlerts.find(
+          (a) => a.roomId === room.id && !a.isRead && (a.severity === "critical" || a.severity === "warning")
+        );
+
+        if (room.status === "high-usage" && !activeAlert) {
+          newAlerts.push({
+            id: `alert-high-${room.id}-${Date.now()}`,
+            roomId: room.id,
+            roomName: room.name,
+            message: `${room.name} exceeded power threshold (${room.currentPower} kW vs ${room.expectedPower} kW expected)`,
+            severity: "critical",
+            timestamp: now,
+            isRead: false,
+          });
+        } else if (room.status === "warning" && !activeAlert) {
+          if (room.temperature > 28.0) {
+            newAlerts.push({
+              id: `alert-temp-${room.id}-${Date.now()}`,
+              roomId: room.id,
+              roomName: room.name,
+              message: `Temperature anomaly detected (${room.temperature}°C) — HVAC overworking`,
+              severity: "warning",
+              timestamp: now,
+              isRead: false,
+            });
+          } else if (room.occupancy === 0 && room.lightsOn) {
+            newAlerts.push({
+              id: `alert-empty-${room.id}-${Date.now()}`,
+              roomId: room.id,
+              roomName: room.name,
+              message: `Lighting left ON after hours with 0 occupancy`,
+              severity: "warning",
+              timestamp: now,
+              isRead: false,
+            });
+          } else {
+            newAlerts.push({
+              id: `alert-warn-${room.id}-${Date.now()}`,
+              roomId: room.id,
+              roomName: room.name,
+              message: `HVAC consumption increased in ${room.name}`,
+              severity: "warning",
+              timestamp: now,
+              isRead: false,
+            });
+          }
+        }
+      });
+
+      // Auto-resolve: mark previous alerts as read if room status recovered to normal
+      const autoResolved = prevAlerts.map((alert) => {
+        const currentRoom = updatedRoomsList.find((r) => r.id === alert.roomId);
+        if (currentRoom && currentRoom.status === "normal" && alert.severity !== "info") {
+          return { ...alert, isRead: true };
+        }
+        return alert;
+      });
+
+      const combined = [...newAlerts, ...autoResolved];
+      return combined.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 15);
+    });
+
+    setSummaryCards(getSummaryCards());
+    setChartData(generateChartData());
+    if (updatedRoomsList.length > 0) {
+      setRecommendations(generateRecommendations(updatedRoomsList));
+    }
+    setLastUpdated(now);
+  }, [classrooms]);
+
   const updateSettings = useCallback((newSettings: Partial<AppSettings>) => {
     setSettings((prev) => {
       const updated = { ...prev, ...newSettings };
@@ -98,24 +209,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // Refresh button action: Steps telemetry without overwriting database records
   const refreshData = useCallback(() => {
     setIsRefreshing(true);
-    loadDatabaseData().finally(() => {
+    stepTelemetryData();
+    setTimeout(() => {
       setIsRefreshing(false);
-    });
-  }, [loadDatabaseData]);
+    }, 400);
+  }, [stepTelemetryData]);
 
-  // Auto-refresh timer for live telemetry overlay based on settings
+  // Auto-refresh timer steps telemetry overlay based on interval settings
   useEffect(() => {
     if (!settings.autoRefreshEnabled) return;
 
     const intervalMs = settings.refreshInterval * 1000;
     const timer = setInterval(() => {
-      loadDatabaseData();
+      stepTelemetryData();
     }, intervalMs);
 
     return () => clearInterval(timer);
-  }, [settings.autoRefreshEnabled, settings.refreshInterval, loadDatabaseData]);
+  }, [settings.autoRefreshEnabled, settings.refreshInterval, stepTelemetryData]);
 
   const markAllAlertsRead = useCallback(() => {
     setAlerts((prev) => prev.map((a) => ({ ...a, isRead: true })));
@@ -125,20 +238,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setAlerts([]);
   }, []);
 
+  // Device control: Mutates live telemetry simulator state
   const toggleDevice = useCallback((roomId: string, device: "lightsOn" | "fansOn") => {
+    const updatedTelemetry = telemetrySimulator.updateDeviceState(roomId, device);
     setClassrooms((prev) =>
       prev.map((room) => {
         if (room.id === roomId) {
-          const updatedState = !room[device];
-          let powerChange = 0;
-          if (device === "lightsOn") powerChange = updatedState ? 0.4 : -0.4;
-          if (device === "fansOn") powerChange = updatedState ? 0.6 : -0.6;
-
-          const newPower = Math.max(0.2, Math.round((room.currentPower + powerChange) * 10) / 10);
           return {
             ...room,
-            [device]: updatedState,
-            currentPower: newPower,
+            [device]: updatedTelemetry[device],
+            currentPower: updatedTelemetry.currentPower,
           };
         }
         return room;

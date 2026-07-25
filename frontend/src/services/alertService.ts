@@ -5,7 +5,7 @@ import { generateAlerts } from "@/services/mockData";
 export const alertService = {
   /**
    * Fetch alerts from Supabase alerts table joined with classrooms.
-   * Fallback to generated alerts if Supabase is offline or empty.
+   * Dynamic telemetry correlation: Severity updates based on live telemetry metrics.
    */
   async getAlerts(classrooms: Classroom[] = []): Promise<Alert[]> {
     if (!isSupabaseConfigured) {
@@ -25,13 +25,26 @@ export const alertService = {
       }
 
       return data.map((row: any) => {
-        const roomName = row.classrooms?.room_code || `Room ${row.classroom_id?.slice(0, 4) || ""}`;
+        const room = classrooms.find((c) => c.id === row.classroom_id);
+        const roomName = row.classrooms?.room_code || room?.name || "Classroom";
+
+        let severity: "info" | "warning" | "critical" = row.severity as "info" | "warning" | "critical";
+
+        // Dynamic telemetry correlation: Upgrade severity if telemetry shows extreme risk/power draw
+        if (room) {
+          if (room.riskScore > 75 || room.currentPower > room.expectedPower * 1.4) {
+            severity = "critical";
+          } else if (room.riskScore > 45 && severity === "info") {
+            severity = "warning";
+          }
+        }
+
         return {
           id: row.id,
           roomId: row.classroom_id || "",
           roomName,
           message: `${row.title}: ${row.description}`,
-          severity: row.severity as "info" | "warning" | "critical",
+          severity,
           timestamp: new Date(row.created_at),
           isRead: Boolean(row.resolved),
         };

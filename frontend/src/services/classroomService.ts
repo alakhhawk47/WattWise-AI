@@ -1,26 +1,14 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { DbClassroom } from "@/types/database";
 import type { Classroom, ClassroomStatus } from "@/types";
+import { telemetrySimulator } from "@/services/telemetrySimulator";
 import { generateClassrooms } from "@/services/mockData";
-
-function randomBetween(min: number, max: number): number {
-  return Math.round((Math.random() * (max - min) + min) * 10) / 10;
-}
-
-function randomInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function deriveStatus(currentPower: number, expectedPower: number, riskScore: number): ClassroomStatus {
-  if (riskScore > 70 || currentPower > expectedPower * 1.4) return "high-usage";
-  if (riskScore > 40 || currentPower > expectedPower * 1.15) return "warning";
-  return "normal";
-}
 
 export const classroomService = {
   /**
-   * Fetch classrooms from Supabase with live telemetry overlay.
-   * Fallback to generated mock data if Supabase is offline or empty.
+   * Fetch classrooms from Supabase database joined with reusable telemetry simulator.
+   * Supabase loads: room_code (name), building, floor, capacity, status.
+   * Telemetry simulator loads: temperature, occupancy, power, humidity, riskScore, device states.
    */
   async getClassrooms(): Promise<Classroom[]> {
     if (!isSupabaseConfigured) {
@@ -38,34 +26,38 @@ export const classroomService = {
         return generateClassrooms();
       }
 
-      // Map database classrooms to UI model with dynamic telemetry layer
-      return (data as DbClassroom[]).map((dbRoom) => {
-        const occupancy = randomInt(0, 45);
-        const expectedPower = randomBetween(0.8, 3.5);
-        const currentPower = dbRoom.status === "high-usage"
-          ? randomBetween(expectedPower * 1.3, expectedPower * 1.7)
-          : dbRoom.status === "warning"
-          ? randomBetween(expectedPower * 1.1, expectedPower * 1.35)
-          : randomBetween(expectedPower * 0.6, expectedPower * 1.0);
-        const riskScore = dbRoom.status === "high-usage"
-          ? randomInt(72, 95)
-          : dbRoom.status === "warning"
-          ? randomInt(42, 68)
-          : randomInt(5, 38);
-        const status = deriveStatus(currentPower, expectedPower, riskScore);
+      const dbRooms = data as DbClassroom[];
+
+      // Map database classrooms to UI model using telemetry simulator service
+      return dbRooms.map((dbRoom) => {
+        const telemetry = telemetrySimulator.getRoomTelemetry(dbRoom.id, {
+          capacity: dbRoom.capacity,
+          status: dbRoom.status,
+        });
+
+        // Determine derived status (incorporating DB status baseline & live telemetry)
+        let derivedStatus: ClassroomStatus = (dbRoom.status as ClassroomStatus) || "normal";
+        if (telemetry.riskScore > 75 || telemetry.currentPower > telemetry.expectedPower * 1.4) {
+          derivedStatus = "high-usage";
+        } else if (telemetry.riskScore > 40 || telemetry.currentPower > telemetry.expectedPower * 1.15) {
+          derivedStatus = "warning";
+        }
 
         return {
           id: dbRoom.id,
           name: dbRoom.room_code,
-          occupancy,
-          temperature: randomBetween(22, 32),
-          humidity: randomBetween(35, 75),
-          lightsOn: Math.random() > 0.25,
-          fansOn: Math.random() > 0.3,
-          currentPower,
-          expectedPower,
-          riskScore,
-          status,
+          building: dbRoom.building,
+          floor: dbRoom.floor,
+          capacity: dbRoom.capacity,
+          occupancy: telemetry.occupancy,
+          temperature: telemetry.temperature,
+          humidity: telemetry.humidity,
+          lightsOn: telemetry.lightsOn,
+          fansOn: telemetry.fansOn,
+          currentPower: telemetry.currentPower,
+          expectedPower: telemetry.expectedPower,
+          riskScore: telemetry.riskScore,
+          status: derivedStatus,
         };
       });
     } catch (err) {

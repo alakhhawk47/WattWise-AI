@@ -1,7 +1,7 @@
 // Settings Page — Phase 3 + Phase 5 Final Polish
 // Full application settings persisted in localStorage with theme controls, auto refresh rate, dev mode, toast feedback, and about section
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Settings,
@@ -10,20 +10,19 @@ import {
   Bell,
   RefreshCw,
   Clock,
-  Terminal,
   LogOut,
-  Zap,
-  Code2,
-  Layers,
-  Server,
-  Gauge,
   User as UserIcon,
   Save,
+  Upload,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/components/ui/Toast";
+import { storageService } from "@/services/storageService";
+import { getInitials } from "@/utils";
 import { cn } from "@/lib/utils";
 
 export function SettingsPage() {
@@ -34,18 +33,106 @@ export function SettingsPage() {
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isDeletingAvatar, setIsDeletingAvatar] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const googleAvatar = (user?.user_metadata?.avatar_url as string) || (user?.user_metadata?.picture as string) || "";
+  const activeAvatar = previewUrl || avatarUrl || googleAvatar;
 
   useEffect(() => {
     if (profile) {
       setFullName(profile.full_name || "");
+      setEmail(profile.email || user?.email || "");
       setAvatarUrl(profile.avatar_url || "");
     } else if (user) {
       setFullName((user.user_metadata?.full_name as string) || (user.user_metadata?.name as string) || "");
+      setEmail(user.email || "");
       setAvatarUrl((user.user_metadata?.avatar_url as string) || (user.user_metadata?.picture as string) || "");
     }
   }, [profile, user]);
+
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!user?.id) {
+      showToast({
+        title: "Authentication Required",
+        message: "You must be signed in to upload a profile picture.",
+        type: "error",
+      });
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+
+    setIsUploadingAvatar(true);
+    try {
+      const uploadResult = await storageService.uploadAvatar(user.id, file);
+
+      setAvatarUrl(uploadResult.url);
+      await updateProfileState({ avatar_url: uploadResult.url });
+
+      showToast({
+        title: uploadResult.verified ? "Avatar Uploaded & Verified" : "Avatar Uploaded",
+        message: uploadResult.verified
+          ? "Profile picture stored and verified in Supabase Storage."
+          : "Your profile picture has been updated successfully.",
+        type: "success",
+      });
+    } catch (err: unknown) {
+      console.error("Avatar upload error:", err);
+      setPreviewUrl(null);
+      const errorMessage = err instanceof Error ? err.message : "Failed to upload avatar image.";
+      showToast({
+        title: "Upload Failed",
+        message: errorMessage,
+        type: "error",
+        duration: 4500,
+      });
+    } finally {
+      setIsUploadingAvatar(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    if (!avatarUrl && !previewUrl) return;
+
+    setIsDeletingAvatar(true);
+    try {
+      if (avatarUrl) {
+        await storageService.deleteAvatar(avatarUrl);
+      }
+      setAvatarUrl("");
+      setPreviewUrl(null);
+      await updateProfileState({ avatar_url: "" });
+
+      showToast({
+        title: "Avatar Removed",
+        message: "Profile picture has been deleted.",
+        type: "info",
+      });
+    } catch (err: unknown) {
+      console.error("Avatar deletion error:", err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to delete avatar.";
+      showToast({
+        title: "Delete Failed",
+        message: errorMessage,
+        type: "error",
+      });
+    } finally {
+      setIsDeletingAvatar(false);
+    }
+  };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,11 +140,12 @@ export function SettingsPage() {
     try {
       await updateProfileState({
         full_name: fullName,
+        email: email,
         avatar_url: avatarUrl,
       });
       showToast({
         title: "Profile Updated",
-        message: "Your user profile has been saved successfully to Supabase.",
+        message: "Your user profile has been saved successfully.",
         type: "success",
       });
     } catch (err) {
@@ -117,6 +205,98 @@ export function SettingsPage() {
             <h3 className="text-sm font-semibold text-foreground">User Profile</h3>
           </div>
 
+          {/* Profile Picture Management Component */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-xl border border-border bg-muted/20">
+            <div className="relative group shrink-0">
+              {activeAvatar ? (
+                <img
+                  src={activeAvatar}
+                  alt="Profile Avatar"
+                  className="h-20 w-20 rounded-full border-2 border-primary/30 object-cover shadow-sm"
+                  onError={() => {
+                    if (previewUrl) {
+                      setPreviewUrl(null);
+                    } else if (avatarUrl && googleAvatar) {
+                      setAvatarUrl("");
+                    }
+                  }}
+                />
+              ) : (
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 border-2 border-dashed border-primary/30 text-lg font-bold text-primary">
+                  {fullName ? getInitials(fullName) : <UserIcon className="h-8 w-8 text-primary" />}
+                </div>
+              )}
+              {isUploadingAvatar && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-[1px]">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary-foreground" />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2 text-center sm:text-left flex-1">
+              <h4 className="text-xs font-semibold text-foreground">Profile Picture</h4>
+              <p className="text-[11px] text-muted-foreground">
+                Upload a custom profile photo. Max size 5MB (JPEG, PNG, WebP).
+              </p>
+
+              <div className="flex flex-wrap items-center gap-2 pt-1 justify-center sm:justify-start">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+                  onChange={handleAvatarFileChange}
+                  className="hidden"
+                  id="avatarFileInput"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingAvatar || isDeletingAvatar}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  {isUploadingAvatar ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : previewUrl || avatarUrl ? (
+                    <>
+                      <Upload className="h-3.5 w-3.5" />
+                      Replace Image
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-3.5 w-3.5" />
+                      Upload Picture
+                    </>
+                  )}
+                </button>
+
+                {(avatarUrl || previewUrl) && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteAvatar}
+                    disabled={isUploadingAvatar || isDeletingAvatar}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 text-red-600 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400 px-3 py-1.5 text-xs font-medium hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-red-500"
+                  >
+                    {isDeletingAvatar ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete Image
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
           <form onSubmit={handleSaveProfile} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Display Name */}
@@ -134,26 +314,23 @@ export function SettingsPage() {
                 />
               </div>
 
-              {/* Profile Photo URL */}
+              {/* Email */}
               <div className="space-y-1.5">
-                <label htmlFor="avatarUrlInput" className="text-xs font-medium text-foreground">
-                  Profile Photo URL
+                <label htmlFor="emailInput" className="text-xs font-medium text-foreground">
+                  Email
                 </label>
                 <input
-                  id="avatarUrlInput"
-                  type="text"
-                  value={avatarUrl}
-                  onChange={(e) => setAvatarUrl(e.target.value)}
-                  placeholder="https://example.com/avatar.jpg"
+                  id="emailInput"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="user@example.com"
                   className="w-full rounded-lg border border-input bg-muted/50 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-border/50">
-              <p className="text-[11px] text-muted-foreground">
-                Email: <span className="font-mono text-foreground">{profile?.email || user?.email || "N/A"}</span>
-              </p>
+            <div className="flex items-center justify-end pt-2 border-t border-border/50">
               <button
                 type="submit"
                 disabled={isSavingProfile}
@@ -300,128 +477,7 @@ export function SettingsPage() {
           </div>
         </div>
 
-        {/* Developer Options */}
-        <div className="rounded-2xl border border-border bg-card p-6 space-y-4 card-hover">
-          <div className="flex items-center gap-2 pb-2 border-b border-border">
-            <Terminal className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold text-foreground">Developer Options</h3>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-foreground">Developer Mode</p>
-              <p className="text-xs text-muted-foreground">Show simulated telemetry diagnostics and mock bypass info.</p>
-            </div>
-            <button
-              onClick={() => {
-                const updated = !settings.devMode;
-                updateSettings({ devMode: updated });
-                showToast({
-                  title: "Settings Saved",
-                  message: `Developer mode ${updated ? "enabled" : "disabled"}`,
-                  type: "info",
-                });
-              }}
-              aria-label="Toggle developer mode"
-              className={cn(
-                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                settings.devMode ? "bg-primary" : "bg-muted-foreground/30"
-              )}
-            >
-              <span
-                className={cn(
-                  "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                  settings.devMode ? "translate-x-5" : "translate-x-0"
-                )}
-              />
-            </button>
-          </div>
-        </div>
-
-        {/* About & Project Info */}
-        <div className="rounded-2xl border border-border bg-card p-6 space-y-5 card-hover">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
-                <Zap className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <div>
-                <h4 className="text-base font-bold text-foreground">WattWise AI</h4>
-                <p className="text-xs text-muted-foreground">Smart Classroom Energy Monitoring Dashboard</p>
-              </div>
-            </div>
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary font-mono">
-              v1.2.0-MVP
-            </span>
-          </div>
-
-          {/* Tech Stack */}
-          <div className="space-y-3 pt-2 border-t border-border">
-            <div className="flex items-center gap-2">
-              <Layers className="h-4 w-4 text-primary" />
-              <h5 className="text-xs font-semibold text-foreground uppercase tracking-wider">Tech Stack</h5>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {[
-                "React",
-                "TypeScript",
-                "Vite",
-                "Tailwind CSS",
-                "Recharts",
-                "Supabase Ready Architecture",
-              ].map((tech) => (
-                <div
-                  key={tech}
-                  className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs font-medium text-foreground text-center"
-                >
-                  {tech}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Build Info */}
-          <div className="space-y-2 pt-2 border-t border-border">
-            <div className="flex items-center gap-2">
-              <Code2 className="h-4 w-4 text-primary" />
-              <h5 className="text-xs font-semibold text-foreground uppercase tracking-wider">Build Info</h5>
-            </div>
-            <div className="space-y-1.5 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Version</span>
-                <span className="font-medium text-foreground font-mono">1.2.0-MVP</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Current Build</span>
-                <span className="font-medium text-foreground font-mono text-[10px]">
-                  {`build-${Date.now().toString(36).slice(-8)}`}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Developer Mode</span>
-                <span className={cn("font-semibold", settings.devMode ? "text-emerald-500" : "text-muted-foreground")}>
-                  {settings.devMode ? "Enabled" : "Disabled"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Environment</span>
-                <div className="flex items-center gap-1.5">
-                  <Server className="h-3 w-3 text-muted-foreground" />
-                  <span className="font-medium text-foreground">Development</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Architecture</span>
-                <div className="flex items-center gap-1.5">
-                  <Gauge className="h-3 w-3 text-muted-foreground" />
-                  <span className="font-medium text-foreground">Client-Side SPA</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Sign Out Button */}
+        {/* Account & Sign Out */}
         <div className="pt-2">
           <button
             onClick={handleSignOut}

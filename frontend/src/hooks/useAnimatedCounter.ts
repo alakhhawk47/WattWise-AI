@@ -1,33 +1,44 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
-export function useAnimatedCounter(targetValue: number, duration: number = 800): number {
-  const [count, setCount] = useState<number>(0);
+export function useAnimatedCounter(targetValue: number, duration: number = 600): number {
+  const [currentValue, setCurrentValue] = useState<number>(targetValue);
+  const prevValueRef = useRef<number>(targetValue);
 
   useEffect(() => {
-    let startTimestamp: number | null = null;
-    const startValue = 0;
-    
     if (isNaN(targetValue)) {
-      setCount(targetValue);
+      setCurrentValue(targetValue);
       return;
     }
+
+    const startValue = prevValueRef.current;
+    let startTimestamp: number | null = null;
+    let animationFrameId: number;
 
     const step = (timestamp: number) => {
       if (!startTimestamp) startTimestamp = timestamp;
       const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-      // Ease-out quad formula
+      // Ease-out quad formula for natural transition
       const easeOutProgress = 1 - (1 - progress) * (1 - progress);
-      const currentCount = startValue + (targetValue - startValue) * easeOutProgress;
+      const nextVal = startValue + (targetValue - startValue) * easeOutProgress;
 
-      setCount(currentCount);
+      setCurrentValue(nextVal);
 
       if (progress < 1) {
-        window.requestAnimationFrame(step);
+        animationFrameId = window.requestAnimationFrame(step);
+      } else {
+        prevValueRef.current = targetValue;
       }
     };
 
-    window.requestAnimationFrame(step);
+    animationFrameId = window.requestAnimationFrame(step);
+
+    return () => {
+      if (animationFrameId) {
+        window.cancelAnimationFrame(animationFrameId);
+      }
+      prevValueRef.current = currentValue;
+    };
   }, [targetValue, duration]);
 
-  return count;
+  return currentValue;
 }

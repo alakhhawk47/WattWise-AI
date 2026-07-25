@@ -6,6 +6,7 @@ import { FileText, Download, Calendar, HardDrive, CheckCircle, Loader2 } from "l
 import { jsPDF } from "jspdf";
 import { getReportsList } from "@/services/mockData";
 import { reportService } from "@/services/reportService";
+import { storageService } from "@/services/storageService";
 import { useToast } from "@/components/ui/Toast";
 import type { ReportItem } from "@/types";
 
@@ -152,21 +153,55 @@ export function ReportsPage() {
 
     setTimeout(() => {
       try {
-        generateReportPDF(report);
-        showToast({
-          title: "Report Downloaded",
-          message: `"${report.title}" downloaded successfully`,
-          type: "success",
-          duration: 3500,
-        });
+        if (report.downloadUrl) {
+          // 1. Fetch file or obtain public URL from Supabase Storage 'reports'
+          const fileUrl = storageService.getPublicUrl("reports", report.downloadUrl);
+          
+          // Open or download file from storage
+          const link = document.createElement("a");
+          link.href = fileUrl;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.download = `${report.category}_Report.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          showToast({
+            title: "Storage Download Triggered",
+            message: `Downloading "${report.title}" from Supabase Storage.`,
+            type: "success",
+            duration: 3500,
+          });
+        } else {
+          // 2. Fallback to client-side generated PDF
+          generateReportPDF(report);
+          showToast({
+            title: "Report Downloaded",
+            message: `"${report.title}" generated and downloaded successfully.`,
+            type: "success",
+            duration: 3500,
+          });
+        }
       } catch (e) {
-        console.error("PDF generation error:", e);
-        showToast({
-          title: "Download Failed",
-          message: "Failed to generate PDF. Please try again.",
-          type: "error",
-          duration: 3500,
-        });
+        console.error("PDF download/generation error:", e);
+        // Fallback on error
+        try {
+          generateReportPDF(report);
+          showToast({
+            title: "Fallback PDF Downloaded",
+            message: "Storage download failed; generated client-side report fallback.",
+            type: "info",
+            duration: 3500,
+          });
+        } catch {
+          showToast({
+            title: "Download Failed",
+            message: "Failed to download or generate PDF. Please try again.",
+            type: "error",
+            duration: 3500,
+          });
+        }
       } finally {
         setDownloadingId(null);
       }
